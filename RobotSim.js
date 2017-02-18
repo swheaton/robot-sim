@@ -3,10 +3,20 @@ var pixelsPerFt = 40;
 var gridWidth = pixelsPerFt * 30;
 var gridHeight = pixelsPerFt * 15;
 
-var robotWidth = pixelsPerFt * 2;
-var robotLength = pixelsPerFt * 4;
-
 var context = document.getElementById("myCanvas").getContext("2d");
+
+var robotSpecs = 
+{
+    "width": pixelsPerFt * 2,
+    "height": pixelsPerFt * 4
+}
+
+var robotState = 
+{
+    "row": gridHeight/2,
+    "col": gridWidth/2,
+    "heading": 0
+}
 
 function drawBoard()
 {
@@ -28,8 +38,14 @@ function drawBoard()
 function drawRobot()
 {
 	var ctx=document.getElementById("myCanvas").getContext("2d");
-	ctx.fillRect(gridWidth/2 - robotWidth/2, gridHeight/2 - robotLength/2, robotWidth, robotLength);
-	ctx.stroke();
+	ctx.save();
+	ctx.translate(robotState.col, robotState.row);
+	ctx.rotate(robotState.heading);
+	ctx.fillStyle = "black";
+	ctx.fillRect(-robotSpecs.width/2, -robotSpecs.height/2, robotSpecs.width, robotSpecs.height);
+	ctx.fillStyle = "white";
+	ctx.fillRect(0, -robotSpecs.height/2+5, robotSpecs.width/10, robotSpecs.height/10);
+	ctx.restore();
 }
 
 drawBoard();

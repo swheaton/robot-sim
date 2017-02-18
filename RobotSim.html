@@ -9,7 +9,11 @@
 
 <!-- 40 px is one foot -->
 <body>
-	<canvas id="myCanvas" width="1200" height="600" style="border:1px solid #000000;">
+	<canvas id="gridCanvas" width="1200" height="600" 
+		style="position: absolute; border:1px solid #000000; z-index: 0">
+	</canvas>
+	<canvas id="robotCanvas" width="1200" height="600"
+		style="position: absolute; border:1px solid #000000; z-index: 1">
 	</canvas>
 	<script type="text/javascript" src="RobotSim.js"></script>
 </body>

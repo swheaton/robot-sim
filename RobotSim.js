@@ -21,8 +21,8 @@ var robotSpecs =
 
 var robotState = 
 {
-    "row": gridHeight/2,
-    "col": gridWidth/2,
+    "centerRow": gridHeight/2,
+    "centerCol": gridWidth/2,
     "heading": 0,
     velX: 0,
     velY: 0,
@@ -32,8 +32,8 @@ var robotState =
 // Angular rotation rate of wheel, positive means going forward
 var control = 
 {
-    wheel1: 40,
-    wheel2: -40,
+    wheel1: -40,
+    wheel2: 40,
     wheel3: 40,
     wheel4: -40
 }
@@ -41,12 +41,12 @@ var control =
 function drawGrid()
 {
     var context = document.getElementById("gridCanvas").getContext("2d");
-    for (var x = 0; x <= gridWidth; x += pixelsPerFt) {
+    for (var x = 0; x <= gridWidth; x += pixelsPerFt/2) {
         context.moveTo(0.5 + x, 0);
         context.lineTo(0.5 + x, gridHeight);
     }
 
-    for (var x = 0; x <= gridHeight; x += pixelsPerFt) {
+    for (var x = 0; x <= gridHeight; x += pixelsPerFt/2) {
         context.moveTo(0, 0.5 + x);
         context.lineTo(gridWidth, 0.5 + x);
     }
@@ -60,7 +60,7 @@ function drawRobot()
 {
 	var ctx=document.getElementById("robotCanvas").getContext("2d");
 	ctx.save();
-	ctx.translate(robotState.col, robotState.row);
+	ctx.translate(robotState.centerCol, robotState.centerRow);
 	ctx.rotate(robotState.heading);
 	ctx.fillStyle = "black";
 	ctx.fillRect(-robotSpecs.width/2, -robotSpecs.height/2, robotSpecs.width, robotSpecs.height);
@@ -71,10 +71,20 @@ function drawRobot()
 
 function updateRobotPosition(timeDiff)
 {
-    robotState.row = robotState.row - robotState.velY * (timeDiff / 1000.0);
-    robotState.col = robotState.col + robotState.velX * (timeDiff / 1000.0);
+    robotState.centerRow = robotState.centerRow - robotState.velY * (timeDiff / 1000.0);
+    robotState.centerCol = robotState.centerCol + robotState.velX * (timeDiff / 1000.0);
     robotState.heading = (robotState.heading + 
         robotState.velRot * (timeDiff / 1000.0)) % (Math.PI * 2);
+        
+    // Move robot back to center if it's about to go off screen.
+    if (robotState.centerRow < pixelsPerFt * 3 || robotState.centerRow > pixelsPerFt * 12)
+    {
+        robotState.centerRow = gridHeight/2;
+    }
+    if (robotState.centerCol < pixelsPerFt * 3 || robotState.centerCol > pixelsPerFt * 27)
+    {
+        robotState.centerCol = gridWidth/2;
+    }
 }
 
 // Update robot state given control signals and last state

@@ -1,3 +1,4 @@
+
 //grid width and height
 var pixelsPerFt = 40;
 var gridWidth = pixelsPerFt * 30;
@@ -32,10 +33,10 @@ var robotState =
 // Angular rotation rate of wheel, positive means going forward
 var control = 
 {
-    wheel1: -40,
-    wheel2: 40,
-    wheel3: 40,
-    wheel4: -40
+    wheel1: 0,
+    wheel2: 0,
+    wheel3: 0,
+    wheel4: 0
 }
 
 function drawGrid()
@@ -65,7 +66,7 @@ function drawRobot()
 	ctx.fillStyle = "black";
 	ctx.fillRect(-robotSpecs.width/2, -robotSpecs.height/2, robotSpecs.width, robotSpecs.height);
 	ctx.fillStyle = "white";
-	ctx.fillRect(0, -robotSpecs.height/2+5, robotSpecs.width/10, robotSpecs.height/10);
+	ctx.fillRect(-robotSpecs.width/20, -robotSpecs.height/2 + 5, robotSpecs.width/10, robotSpecs.height/10);
 	ctx.restore();
 }
 
@@ -99,6 +100,22 @@ function updateRobotState(timeDiff)
         (-control.wheel1+control.wheel2-control.wheel3+control.wheel4);
     
     updateRobotPosition(timeDiff);
+}
+
+function onSubmitControlOption()
+{
+    var control = document.getElementById("controlOption");
+    var controlName = control.value;
+    console.log("Changing control mode: " + controlName);
+    switch (controlName)
+    {
+        case "direct":
+            break;
+
+        default:
+            console.error("Invalid control option somehow");
+            break;
+    }
 }
 
 function updateCanvas(canvas, timeDiff)

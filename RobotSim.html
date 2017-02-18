@@ -2,8 +2,8 @@
 <html lang="en-us">
 
 <head>
-<meta charset="utf-8">
-<title>Robot Simulation</title>
+	<meta charset="utf-8">
+	<title>Robot Simulation</title>
 
 </head>
 
@@ -15,6 +15,19 @@
 	<canvas id="robotCanvas" width="1200" height="600"
 		style="position: absolute; border:1px solid #000000; z-index: 1">
 	</canvas>
+
+	<div style="float:right;">
+		<select id="controlOption">
+			<option value="direct">Specify Direction, Speed, Rotation</option>
+		</select>
+		<div id="options_direct">
+			<input type="number" id="direction">Direction</text> </br>
+			<input type="number" id="speed">Speed</text> </br>
+			<input type="number" id="rotation">Rotation Rate</text> </br>
+		</div>
+		<button type="button" onclick="onSubmitControlOption();">Submit Control Change</button>
+	</div>
+
 	<script type="text/javascript" src="RobotSim.js"></script>
 </body>
 </html>

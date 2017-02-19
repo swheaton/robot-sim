@@ -30,13 +30,23 @@ var robotState =
     velRot: 0
 }
 
-// Angular rotation rate of wheel, positive means going forward
 var control = 
 {
+    // Angular rotation rate of wheel, positive means going forward
     wheel1: 0,
     wheel2: 0,
     wheel3: 0,
-    wheel4: 0
+    wheel4: 0,
+    option: "", // Control option,
+    heading: 0, // heading that we think we have
+    // velocities that we want to have
+    velX: 0,
+    velY: 0,
+    velRot: 0,
+    // Parameters connected to control options
+    direction: 0,
+    speed: 0,
+    rotation: 0
 }
 
 function drawGrid()
@@ -102,17 +112,45 @@ function updateRobotState(timeDiff)
     updateRobotPosition(timeDiff);
 }
 
+function updateRobotPlan(timeDiff)
+{
+    // Set velocities based on control option and parameters
+    switch (control.option)
+    {
+        case "direct":
+            // TODO: fix up angles and stuff
+            control.velRot = control.rotation;
+            control.heading = control.heading + control.velRot * (timeDiff / 1000.0);
+            control.velX = control.speed * Math.cos(control.direction - control.heading);
+            control.velY = control.speed * Math.sin(control.direction - control.heading);
+            
+            break;
+        default:
+            break;
+    }
+    
+    // Calculate wheel controls based on goal velocities
+    
+}
+
 function onSubmitControlOption()
 {
     var control = document.getElementById("controlOption");
     var controlName = control.value;
     console.log("Changing control mode: " + controlName);
+    control.option = controlName;
     switch (controlName)
     {
         case "direct":
+            control.direction = document.getElementById("direction").value;
+            control.speed = document.getElementById("speed").value;
+            control.rotation = document.getElementById("rotation").value;
+            console.log(control.direction + " " + control.speed + " " + control.rotation);
+
             break;
 
         default:
+        control.option = ""
             console.error("Invalid control option somehow");
             break;
     }
@@ -124,6 +162,7 @@ function updateCanvas(canvas, timeDiff)
     var context = canvas.getContext("2d");
     context.clearRect(0, 0, canvas.width, canvas.height);
 
+    updateRobotPlan(timeDiff);
     updateRobotState(timeDiff);
     drawRobot();
 }

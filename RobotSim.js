@@ -37,7 +37,7 @@ var control =
     wheel2: 0,
     wheel3: 0,
     wheel4: 0,
-    option: "", // Control option,
+    option: "direct", // Control option, default to "direct" with 0 movement
     heading: 0, // heading that we think we have
     // velocities that we want to have
     velX: 0,
@@ -123,20 +123,24 @@ function updateRobotPlan(timeDiff)
             control.heading = control.heading + control.velRot * (timeDiff / 1000.0);
             control.velX = control.speed * Math.cos(control.direction - control.heading);
             control.velY = control.speed * Math.sin(control.direction - control.heading);
-            
+
             break;
         default:
+            console.error("Invalid control option somehow");
             break;
     }
     
     // Calculate wheel controls based on goal velocities
-    
+    control.wheel1 = (control.velY + control.velX - 3 * control.velRot) / robotSpecs.wheelRadius;
+    control.wheel2 = (control.velY - control.velX + 3 * control.velRot) / robotSpecs.wheelRadius;
+    control.wheel3 = (control.velY - control.velX - 3 * control.velRot) / robotSpecs.wheelRadius;
+    control.wheel4 = (control.velY + control.velX + 3 * control.velRot) / robotSpecs.wheelRadius;
 }
 
 function onSubmitControlOption()
 {
-    var control = document.getElementById("controlOption");
-    var controlName = control.value;
+    var controlElt = document.getElementById("controlOption");
+    var controlName = controlElt.value;
     console.log("Changing control mode: " + controlName);
     control.option = controlName;
     switch (controlName)

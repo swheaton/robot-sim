@@ -11,7 +11,7 @@ window.requestAnimFrame = (function(callback) {
 // Specs of the HTML page
 var page = new function()
 {
-    this.pixelsPerFt = 40;
+    this.pixelsPerFt = 30;
 
     // Units in feet
     this.realGridWidth = 30;
@@ -161,6 +161,9 @@ function updateRobotState(timeDiff)
     actualState.velRot = robotSpecs.wheelRadius/
         (4*(robotSpecs.realWidth/2 + robotSpecs.realHeight/2)) *
         (-control.wheel1+control.wheel2-control.wheel3+control.wheel4);
+        
+    document.getElementById("velX").textContent = actualState.velX.toFixed(2);
+    document.getElementById("velY").textContent = actualState.velY.toFixed(2);
 
     updateRobotPosition(timeDiff);
 }
@@ -174,7 +177,6 @@ function updateRobotPlan(timeDiff)
             //control.heading = control.heading + control.velRot * (timeDiff / 1000.0);
             control.velX = inputs.speed * Math.cos(inputs.theta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/));
             control.velY = inputs.speed * Math.sin(inputs.theta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/));
-            //console.log (control.velX + " " + control.velY + " " + inputs.theta+ " " + actualState.theta);
             control.velRot = inputs.velRot;
 
             break;
@@ -189,6 +191,10 @@ function updateRobotPlan(timeDiff)
     control.wheel2 = (control.velY - control.velX + 3 * control.velRot) / robotSpecs.wheelRadius;
     control.wheel3 = (control.velY - control.velX - 3 * control.velRot) / robotSpecs.wheelRadius;
     control.wheel4 = (control.velY + control.velX + 3 * control.velRot) / robotSpecs.wheelRadius;
+    document.getElementById("w1").textContent = control.wheel1.toFixed(2);
+    document.getElementById("w2").textContent = control.wheel2.toFixed(2);
+    document.getElementById("w3").textContent = control.wheel3.toFixed(2);
+    document.getElementById("w4").textContent = control.wheel4.toFixed(2);
 }
 
 

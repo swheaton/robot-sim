@@ -9,10 +9,10 @@
 
 <!-- 40 px is one foot -->
 <body>
-	<canvas id="gridCanvas" width="1200" height="600" 
+	<canvas id="gridCanvas" width="900" height="450" 
 		style="position: absolute; border:1px solid #000000; z-index: 0">
 	</canvas>
-	<canvas id="robotCanvas" width="1200" height="600"
+	<canvas id="robotCanvas" width="900" height="450"
 		style="position: absolute; border:1px solid #000000; z-index: 1">
 	</canvas>
 
@@ -20,6 +20,13 @@
 		X Pos: <text id="xPos"></text> <br />
 		Y Pos: <text id="yPos"></text> <br/>
 		Theta: <text id="theta"></text> <br />
+		X Velocity: <text id="velX">0.0</text> <br />
+		Y Velocity: <text id="velY">0.0</text> <br />
+		Wheel 1: <text id="w1">0.0</text> <br />
+		Wheel 2: <text id="w2">0.0</text> <br />
+		Wheel 3: <text id="w3">0.0</text> <br />
+		Wheel 4: <text id="w4">0.0</text> <br />
+
 	</div> <br /> <br /> <br />
 
 	<div style="float:right;">
@@ -34,6 +41,6 @@
 		<button type="button" onclick="onSubmitControlOption();">Submit Control Change</button>
 	</div>
 
-	<script type="text/javascript" src="RobotSim.js?version=2"></script>
+	<script type="text/javascript" src="RobotSim.js?version=3"></script>
 </body>
 </html>

@@ -16,6 +16,12 @@
 		style="position: absolute; border:1px solid #000000; z-index: 1">
 	</canvas>
 
+	<div style="float:right">
+		X Pos: <text id="xPos"></text> <br />
+		Y Pos: <text id="yPos"></text> <br/>
+		Theta: <text id="theta"></text> <br />
+	</div> <br /> <br /> <br />
+
 	<div style="float:right;">
 		<select id="controlOption">
 			<option value="direct">Specify Direction, Speed, Rotation</option>
@@ -27,6 +33,9 @@
 		</div>
 		<button type="button" onclick="onSubmitControlOption();">Submit Control Change</button>
 	</div>
+	
+	
+
 
 	<script type="text/javascript" src="RobotSim.js"></script>
 </body>

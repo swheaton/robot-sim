@@ -1,9 +1,4 @@
-
-//grid width and height
-var pixelsPerFt = 40;
-var gridWidth = pixelsPerFt * 30;
-var gridHeight = pixelsPerFt * 15;
-
+// Animation help
 window.requestAnimFrame = (function(callback) {
     return window.requestAnimationFrame || window.webkitRequestAnimationFrame ||
         window.mozRequestAnimationFrame || window.oRequestAnimationFrame ||
@@ -13,22 +8,52 @@ window.requestAnimFrame = (function(callback) {
     };
 })();
 
-var robotSpecs = 
+// Specs of the HTML page
+var page = new function()
 {
-    "width": pixelsPerFt * 2,
-    "height": pixelsPerFt * 4,
-    wheelRadius: 1
+    this.pixelsPerFt = 40;
+
+    // Units in feet
+    this.realGridWidth = 30;
+    this.realGridHeight = 15;
+
+    // Units in pixels
+    this.displayGridWidth = this.realGridWidth * this.pixelsPerFt;
+    this.displayGridHeight = this.realGridHeight * this.pixelsPerFt;
+
+    // Center of the grid corresponds to these coordinates in feet
+    this.centerX = 0;
+    this.centerY = 0;
 }
 
-var robotState = 
+// Units of feet
+var robotSpecs = new function() 
 {
-    "centerRow": gridHeight/2,
-    "centerCol": gridWidth/2,
-    "heading": 0,
+    this.realWidth = 2;
+    this.realHeight = 4;
+    this.wheelRadius = 1;
+    this.displayWidth = this.realWidth * page.pixelsPerFt;
+    this.displayHeight = this.realHeight * page.pixelsPerFt;
+}
+
+var actualState = 
+{
+    // Units of feet
+    centerX: 0,
+    centerY: 0,
+    // Radians
+    theta: 0,
+    // Ft/sec
     velX: 0,
     velY: 0,
+    // Radians/sec
     velRot: 0
 }
+
+/*var perceivedState = 
+{
+    
+}*/
 
 var control = 
 {
@@ -37,6 +62,7 @@ var control =
     wheel2: 0,
     wheel3: 0,
     wheel4: 0,
+    /*
     option: "direct", // Control option, default to "direct" with 0 movement
     heading: 0, // heading that we think we have
     // velocities that we want to have
@@ -46,20 +72,20 @@ var control =
     // Parameters connected to control options
     direction: 0,
     speed: 0,
-    rotation: 0
+    rotation: 0*/
 }
 
 function drawGrid()
 {
     var context = document.getElementById("gridCanvas").getContext("2d");
-    for (var x = 0; x <= gridWidth; x += pixelsPerFt/2) {
+    for (var x = 0; x <= page.displayGridWidth; x += page.pixelsPerFt/2) {
         context.moveTo(0.5 + x, 0);
-        context.lineTo(0.5 + x, gridHeight);
+        context.lineTo(0.5 + x, page.displayGridHeight);
     }
 
-    for (var x = 0; x <= gridHeight; x += pixelsPerFt/2) {
+    for (var x = 0; x <= page.displayGridHeight; x += page.pixelsPerFt/2) {
         context.moveTo(0, 0.5 + x);
-        context.lineTo(gridWidth, 0.5 + x);
+        context.lineTo(page.displayGridWidth, 0.5 + x);
     }
 
     context.strokeStyle = 'rgba(0, 0, 0, 0.2)';
@@ -71,47 +97,60 @@ function drawRobot()
 {
 	var ctx=document.getElementById("robotCanvas").getContext("2d");
 	ctx.save();
-	ctx.translate(robotState.centerCol, robotState.centerRow);
-	ctx.rotate(robotState.heading);
+	var centerCol = (actualState.centerX - page.centerX + page.realGridWidth / 2) * page.pixelsPerFt;
+	var centerRow = (page.centerY - actualState.centerY + page.realGridHeight / 2) * page.pixelsPerFt;
+	ctx.translate(centerCol, centerRow);
+	ctx.rotate(actualState.theta);
 	ctx.fillStyle = "black";
-	ctx.fillRect(-robotSpecs.width/2, -robotSpecs.height/2, robotSpecs.width, robotSpecs.height);
+	ctx.fillRect(-robotSpecs.displayWidth/2, -robotSpecs.displayHeight/2,
+	    robotSpecs.displayWidth, robotSpecs.displayHeight);
 	ctx.fillStyle = "white";
-	ctx.fillRect(-robotSpecs.width/20, -robotSpecs.height/2 + 5, robotSpecs.width/10, robotSpecs.height/10);
+	ctx.fillRect(-robotSpecs.displayWidth/20, -robotSpecs.displayHeight/2 + 5,
+	    robotSpecs.displayWidth/10, robotSpecs.displayHeight/10);
 	ctx.restore();
+	
+	document.getElementById("xPos").textContent = actualState.centerX.toFixed(2);
+	document.getElementById("yPos").textContent = actualState.centerY.toFixed(2);
+	document.getElementById("theta").textContent = (actualState.theta / Math.PI * 180.0).toFixed(1);
 }
 
 function updateRobotPosition(timeDiff)
 {
-    robotState.centerRow = robotState.centerRow - robotState.velY * (timeDiff / 1000.0);
-    robotState.centerCol = robotState.centerCol + robotState.velX * (timeDiff / 1000.0);
-    robotState.heading = (robotState.heading + 
-        robotState.velRot * (timeDiff / 1000.0)) % (Math.PI * 2);
+    actualState.centerX = actualState.centerX + actualState.velX * (timeDiff / 1000.0);
+    actualState.centerY = actualState.centerY + actualState.velY * (timeDiff / 1000.0);
+    actualState.theta = (actualState.theta - actualState.velRot * (timeDiff / 1000.0)) % (Math.PI * 2);
         
     // Move robot back to center if it's about to go off screen.
-    if (robotState.centerRow < pixelsPerFt * 3 || robotState.centerRow > pixelsPerFt * 12)
+    if (actualState.centerX <= page.centerX - (page.realGridWidth / 2 - 3) ||
+        actualState.centerX >= page.centerX + (page.realGridWidth / 2 - 3))
     {
-        robotState.centerRow = gridHeight/2;
+        page.centerX = actualState.centerX;
+        page.centerY = actualState.centerY;
     }
-    if (robotState.centerCol < pixelsPerFt * 3 || robotState.centerCol > pixelsPerFt * 27)
+    if (actualState.centerY <= page.centerY - (page.realGridHeight / 2 - 3) ||
+        actualState.centerY >= page.centerY + (page.realGridHeight / 2 - 3))
     {
-        robotState.centerCol = gridWidth/2;
+        page.centerX = actualState.centerX;
+        page.centerY = actualState.centerY;
     }
 }
+
 
 // Update robot state given control signals and last state
 function updateRobotState(timeDiff)
 {
-    robotState.velX = (robotSpecs.wheelRadius/4) *
+    actualState.velX = (robotSpecs.wheelRadius/4) *
         (control.wheel1-control.wheel2-control.wheel3+control.wheel4);
-    robotState.velY = (robotSpecs.wheelRadius/4) *
+    actualState.velY = (robotSpecs.wheelRadius/4) *
         (control.wheel1+control.wheel2+control.wheel3+control.wheel4);
-    robotState.velRot = robotSpecs.wheelRadius/
-        (4*(robotSpecs.width/2 + robotSpecs.height/2)) *
+    actualState.velRot = robotSpecs.wheelRadius/
+        (4*(robotSpecs.realWidth/2 + robotSpecs.realHeight/2)) *
         (-control.wheel1+control.wheel2-control.wheel3+control.wheel4);
-    
+
     updateRobotPosition(timeDiff);
 }
 
+/*
 function updateRobotPlan(timeDiff)
 {
     // Set velocities based on control option and parameters
@@ -160,13 +199,14 @@ function onSubmitControlOption()
     }
 }
 
+*/
 function updateCanvas(canvas, timeDiff)
 {
     // Clear the canvas before drawing
     var context = canvas.getContext("2d");
     context.clearRect(0, 0, canvas.width, canvas.height);
 
-    updateRobotPlan(timeDiff);
+    //updateRobotPlan(timeDiff);
     updateRobotState(timeDiff);
     drawRobot();
 }

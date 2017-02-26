@@ -62,17 +62,25 @@ var control =
     wheel2: 0,
     wheel3: 0,
     wheel4: 0,
-    /*
-    option: "direct", // Control option, default to "direct" with 0 movement
-    heading: 0, // heading that we think we have
-    // velocities that we want to have
+    
+    // Intended velocities
     velX: 0,
     velY: 0,
     velRot: 0,
-    // Parameters connected to control options
-    direction: 0,
+    
+    /*
+    heading: 0, // heading that we think we have
+    */
+}
+
+var inputs =
+{
+    // Input option - default to "direct" with 0 movement
+    option: "direct",
+    // Desired heading/speeds
+    theta: 0,
     speed: 0,
-    rotation: 0*/
+    velRot: 0
 }
 
 function drawGrid()
@@ -107,6 +115,11 @@ function drawRobot()
 	ctx.fillStyle = "white";
 	ctx.fillRect(-robotSpecs.displayWidth/20, -robotSpecs.displayHeight/2 + 5,
 	    robotSpecs.displayWidth/10, robotSpecs.displayHeight/10);
+	    
+	ctx.fillStyle = "red";
+	ctx.beginPath();
+	ctx.arc(0, 0, 4, 0, 2 * Math.PI, false);
+	ctx.fill();
 	ctx.restore();
 	
 	document.getElementById("xPos").textContent = actualState.centerX.toFixed(2);
@@ -116,8 +129,10 @@ function drawRobot()
 
 function updateRobotPosition(timeDiff)
 {
-    actualState.centerX = actualState.centerX + actualState.velX * (timeDiff / 1000.0);
-    actualState.centerY = actualState.centerY + actualState.velY * (timeDiff / 1000.0);
+    actualState.centerX = actualState.centerX + (timeDiff / 1000.0) * 
+        (actualState.velX * Math.cos(actualState.theta) + actualState.velY * Math.sin(actualState.theta));
+    actualState.centerY = actualState.centerY + (timeDiff / 1000.0) *
+        (actualState.velX * Math.sin(-actualState.theta) + actualState.velY * Math.cos(actualState.theta));
     actualState.theta = (actualState.theta - actualState.velRot * (timeDiff / 1000.0)) % (Math.PI * 2);
         
     // Move robot back to center if it's about to go off screen.
@@ -150,25 +165,25 @@ function updateRobotState(timeDiff)
     updateRobotPosition(timeDiff);
 }
 
-/*
 function updateRobotPlan(timeDiff)
 {
     // Set velocities based on control option and parameters
-    switch (control.option)
+    switch (inputs.option)
     {
         case "direct":
-            // TODO: fix up angles and stuff
-            control.velRot = control.rotation;
-            control.heading = control.heading + control.velRot * (timeDiff / 1000.0);
-            control.velX = control.speed * Math.cos(control.direction - control.heading);
-            control.velY = control.speed * Math.sin(control.direction - control.heading);
+            //control.heading = control.heading + control.velRot * (timeDiff / 1000.0);
+            control.velX = inputs.speed * Math.cos(inputs.theta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/));
+            control.velY = inputs.speed * Math.sin(inputs.theta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/));
+            //console.log (control.velX + " " + control.velY + " " + inputs.theta+ " " + actualState.theta);
+            control.velRot = inputs.velRot;
 
             break;
         default:
             console.error("Invalid control option somehow");
             break;
     }
-    
+    var a = 2;
+
     // Calculate wheel controls based on goal velocities
     control.wheel1 = (control.velY + control.velX - 3 * control.velRot) / robotSpecs.wheelRadius;
     control.wheel2 = (control.velY - control.velX + 3 * control.velRot) / robotSpecs.wheelRadius;
@@ -176,19 +191,20 @@ function updateRobotPlan(timeDiff)
     control.wheel4 = (control.velY + control.velX + 3 * control.velRot) / robotSpecs.wheelRadius;
 }
 
+
 function onSubmitControlOption()
 {
     var controlElt = document.getElementById("controlOption");
     var controlName = controlElt.value;
     console.log("Changing control mode: " + controlName);
-    control.option = controlName;
+    inputs.option = controlName;
     switch (controlName)
     {
         case "direct":
-            control.direction = document.getElementById("direction").value;
-            control.speed = document.getElementById("speed").value;
-            control.rotation = document.getElementById("rotation").value;
-            console.log(control.direction + " " + control.speed + " " + control.rotation);
+            inputs.theta = document.getElementById("direction").value * Math.PI / 180.0;
+            inputs.speed = document.getElementById("speed").value;
+            inputs.velRot = document.getElementById("rotation").value * Math.PI / 180.0;
+            console.log(inputs.theta + " " + inputs.speed + " " + inputs.velRot);
 
             break;
 
@@ -199,14 +215,13 @@ function onSubmitControlOption()
     }
 }
 
-*/
 function updateCanvas(canvas, timeDiff)
 {
     // Clear the canvas before drawing
     var context = canvas.getContext("2d");
     context.clearRect(0, 0, canvas.width, canvas.height);
 
-    //updateRobotPlan(timeDiff);
+    updateRobotPlan(timeDiff);
     updateRobotState(timeDiff);
     drawRobot();
 }

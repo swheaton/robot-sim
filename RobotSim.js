@@ -150,7 +150,6 @@ function updateRobotPosition(timeDiff)
     }
 }
 
-
 // Update robot state given control signals and last state
 function updateRobotState(timeDiff)
 {
@@ -161,7 +160,7 @@ function updateRobotState(timeDiff)
     actualState.velRot = robotSpecs.wheelRadius/
         (4*(robotSpecs.realWidth/2 + robotSpecs.realHeight/2)) *
         (-control.wheel1+control.wheel2-control.wheel3+control.wheel4);
-        
+
     document.getElementById("velX").textContent = actualState.velX.toFixed(2);
     document.getElementById("velY").textContent = actualState.velY.toFixed(2);
 
@@ -171,6 +170,7 @@ function updateRobotState(timeDiff)
 function updateRobotPlan(timeDiff)
 {
     // Set velocities based on control option and parameters
+    var calcControls = true;
     switch (inputs.option)
     {
         case "direct":
@@ -178,7 +178,10 @@ function updateRobotPlan(timeDiff)
             control.velX = inputs.speed * Math.cos(inputs.theta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/));
             control.velY = inputs.speed * Math.sin(inputs.theta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/));
             control.velRot = inputs.velRot;
-
+            break;
+        
+        case "wheelControl":
+            calcControls = false;
             break;
         default:
             console.error("Invalid control option somehow");
@@ -187,16 +190,19 @@ function updateRobotPlan(timeDiff)
     var a = 2;
 
     // Calculate wheel controls based on goal velocities
-    control.wheel1 = (control.velY + control.velX - 3 * control.velRot) / robotSpecs.wheelRadius;
-    control.wheel2 = (control.velY - control.velX + 3 * control.velRot) / robotSpecs.wheelRadius;
-    control.wheel3 = (control.velY - control.velX - 3 * control.velRot) / robotSpecs.wheelRadius;
-    control.wheel4 = (control.velY + control.velX + 3 * control.velRot) / robotSpecs.wheelRadius;
+    if (calcControls === true)
+    {
+        control.wheel1 = (control.velY + control.velX - 3 * control.velRot) / robotSpecs.wheelRadius;
+        control.wheel2 = (control.velY - control.velX + 3 * control.velRot) / robotSpecs.wheelRadius;
+        control.wheel3 = (control.velY - control.velX - 3 * control.velRot) / robotSpecs.wheelRadius;
+        control.wheel4 = (control.velY + control.velX + 3 * control.velRot) / robotSpecs.wheelRadius;
+    }
+
     document.getElementById("w1").textContent = control.wheel1.toFixed(2);
     document.getElementById("w2").textContent = control.wheel2.toFixed(2);
     document.getElementById("w3").textContent = control.wheel3.toFixed(2);
     document.getElementById("w4").textContent = control.wheel4.toFixed(2);
 }
-
 
 function onSubmitControlOption()
 {
@@ -210,8 +216,15 @@ function onSubmitControlOption()
             inputs.theta = document.getElementById("direction").value * Math.PI / 180.0;
             inputs.speed = document.getElementById("speed").value;
             inputs.velRot = document.getElementById("rotation").value * Math.PI / 180.0;
-            console.log(inputs.theta + " " + inputs.speed + " " + inputs.velRot);
-
+            console.log("Theta, Speed, VelRot: " + inputs.theta + " " + inputs.speed + " " + inputs.velRot);
+            break;
+            
+        case "wheelControl":
+            control.wheel1 = Number(document.getElementById("wheel1").value);
+            control.wheel2 = Number(document.getElementById("wheel2").value);
+            control.wheel3 = Number(document.getElementById("wheel3").value);
+            control.wheel4 = Number(document.getElementById("wheel4").value);
+            console.log("Wheel 1-4: " + control.wheel1 + " " + control.wheel2 + " " + control.wheel3 + " " + control.wheel4);
             break;
 
         default:

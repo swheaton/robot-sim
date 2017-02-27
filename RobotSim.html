@@ -32,11 +32,16 @@
 	<div style="float:right;">
 		<select id="controlOption">
 			<option value="direct">Specify Direction, Speed, Rotation</option>
+			<option value="wheelControl">Specify Wheel Controls</option>
 		</select>
 		<div id="options_direct">
 			<input type="number" id="direction">Theta (deg)</text> </br>
 			<input type="number" id="speed">Speed (ft/s)</text> </br>
 			<input type="number" id="rotation">Rotation Rate (deg/sec)</text> </br>
+			<input type="number" id="wheel1">Wheel Rotation Rate (rot/sec)</text> </br>
+			<input type="number" id="wheel2">Wheel Rotation Rate (rot/sec)</text> </br>
+			<input type="number" id="wheel3">Wheel Rotation Rate (rot/sec)</text> </br>
+			<input type="number" id="wheel4">Wheel Rotation Rate (rot/sec)</text> </br>
 		</div>
 		<button type="button" onclick="onSubmitControlOption();">Submit Control Change</button>
 	</div>

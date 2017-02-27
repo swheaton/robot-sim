@@ -174,7 +174,6 @@ function updateRobotPlan(timeDiff)
     switch (inputs.option)
     {
         case "direct":
-            //control.heading = control.heading + control.velRot * (timeDiff / 1000.0);
             control.velX = inputs.speed * Math.cos(inputs.theta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/));
             control.velY = inputs.speed * Math.sin(inputs.theta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/));
             control.velRot = inputs.velRot;
@@ -183,6 +182,24 @@ function updateRobotPlan(timeDiff)
         case "wheelControl":
             calcControls = false;
             break;
+            
+        case "point":
+            if (Math.abs(inputs.pointY - actualState.centerY) <= 0.01 && Math.abs(inputs.pointX - actualState.centerX) <= 0.01)
+            {
+                control.velX = 0.0;
+                control.velY = 0.0;
+                control.velRot = 0.0;
+            }
+            else
+            {
+                var targetTheta = Math.atan2(inputs.pointY - actualState.centerY, inputs.pointX, actualState.pointX);
+                control.velX = 1.0 * Math.cos(targetTheta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/));
+                control.velY = 1.0 * Math.sin(targetTheta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/));
+                control.velRot = 0.0;
+                console.log(targetTheta * 180.0 / Math.PI);
+            }
+            break;
+
         default:
             console.error("Invalid control option somehow");
             break;
@@ -213,9 +230,9 @@ function onSubmitControlOption()
     switch (controlName)
     {
         case "direct":
-            inputs.theta = document.getElementById("direction").value * Math.PI / 180.0;
-            inputs.speed = document.getElementById("speed").value;
-            inputs.velRot = document.getElementById("rotation").value * Math.PI / 180.0;
+            inputs.theta = Number(document.getElementById("direction").value) * Math.PI / 180.0;
+            inputs.speed = Number(document.getElementById("speed").value);
+            inputs.velRot = Number(document.getElementById("rotation").value) * Math.PI / 180.0;
             console.log("Theta, Speed, VelRot: " + inputs.theta + " " + inputs.speed + " " + inputs.velRot);
             break;
             
@@ -225,6 +242,12 @@ function onSubmitControlOption()
             control.wheel3 = Number(document.getElementById("wheel3").value);
             control.wheel4 = Number(document.getElementById("wheel4").value);
             console.log("Wheel 1-4: " + control.wheel1 + " " + control.wheel2 + " " + control.wheel3 + " " + control.wheel4);
+            break;
+            
+        case "point":
+            inputs.pointX = Number(document.getElementById("PointX").value);
+            inputs.pointY = Number(document.getElementById("PointY").value);
+            inputs.theta = Number(document.getElementById("direction").value) * Math.PI / 180.0;
             break;
 
         default:

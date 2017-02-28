@@ -178,13 +178,13 @@ function updateRobotPlan(timeDiff)
             control.velY = inputs.speed * Math.sin(inputs.theta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/));
             control.velRot = inputs.velRot;
             break;
-        
+
         case "wheelControl":
             calcControls = false;
             break;
-            
+
         case "point":
-            if (Math.abs(inputs.pointY - actualState.centerY) <= 0.01 && Math.abs(inputs.pointX - actualState.centerX) <= 0.01)
+            if (Math.abs(inputs.pointY - actualState.centerY) < 0.009 && Math.abs(inputs.pointX - actualState.centerX) < 0.009)
             {
                 control.velX = 0.0;
                 control.velY = 0.0;
@@ -192,7 +192,7 @@ function updateRobotPlan(timeDiff)
             }
             else
             {
-                var targetTheta = Math.atan2(inputs.pointY - actualState.centerY, inputs.pointX, actualState.pointX);
+                var targetTheta = Math.atan2(inputs.pointY - actualState.centerY, inputs.pointX - actualState.centerX);
                 control.velX = 1.0 * Math.cos(targetTheta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/));
                 control.velY = 1.0 * Math.sin(targetTheta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/));
                 control.velRot = 0.0;

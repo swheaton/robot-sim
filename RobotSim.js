@@ -184,19 +184,25 @@ function updateRobotPlan(timeDiff)
             break;
 
         case "point":
-            if (Math.abs(inputs.pointY - actualState.centerY) < 0.009 && Math.abs(inputs.pointX - actualState.centerX) < 0.009)
+            if (Math.abs(inputs.pointY - actualState.centerY) < 0.005 && Math.abs(inputs.pointX - actualState.centerX) < 0.005)
             {
                 control.velX = 0.0;
                 control.velY = 0.0;
-                control.velRot = 0.0;
             }
             else
             {
                 var targetTheta = Math.atan2(inputs.pointY - actualState.centerY, inputs.pointX - actualState.centerX);
-                control.velX = 1.0 * Math.cos(targetTheta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/));
-                control.velY = 1.0 * Math.sin(targetTheta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/));
-                control.velRot = 0.0;
+                control.velX = 1.0 * Math.cos(targetTheta + (actualState.theta));
+                control.velY = 1.0 * Math.sin(targetTheta + (actualState.theta));
                 console.log(targetTheta * 180.0 / Math.PI);
+            }
+            if (inputs.theta - actualState.theta < 0.005)
+            {
+                control.velRot = 0.0;
+            }
+            else
+            {
+                control.velRot = -1.0;
             }
             break;
 
@@ -204,6 +210,7 @@ function updateRobotPlan(timeDiff)
             console.error("Invalid control option somehow");
             break;
     }
+
     var a = 2;
 
     // Calculate wheel controls based on goal velocities
@@ -248,6 +255,7 @@ function onSubmitControlOption()
             inputs.pointX = Number(document.getElementById("PointX").value);
             inputs.pointY = Number(document.getElementById("PointY").value);
             inputs.theta = Number(document.getElementById("direction").value) * Math.PI / 180.0;
+            console.log("(X, Y, theta): (" + inputs.pointX + ", " + inputs.pointY + ", " + inputs.theta + ")");
             break;
 
         default:

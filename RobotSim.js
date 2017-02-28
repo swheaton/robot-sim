@@ -80,7 +80,11 @@ var inputs =
     // Desired heading/speeds
     theta: 0,
     speed: 0,
-    velRot: 0
+    velRot: 0,
+    pointX: 0,
+    pointY: 0,
+    radius: 0,
+    inclination: 0
 }
 
 function drawGrid()
@@ -194,7 +198,6 @@ function updateRobotPlan(timeDiff)
                 var targetTheta = Math.atan2(inputs.pointY - actualState.centerY, inputs.pointX - actualState.centerX);
                 control.velX = 1.0 * Math.cos(targetTheta + (actualState.theta));
                 control.velY = 1.0 * Math.sin(targetTheta + (actualState.theta));
-                console.log(targetTheta * 180.0 / Math.PI);
             }
             if (inputs.theta - actualState.theta < 0.005)
             {
@@ -204,6 +207,13 @@ function updateRobotPlan(timeDiff)
             {
                 control.velRot = -1.0;
             }
+            break;
+            
+        case "circle":
+            var targetTheta = Math.atan2(inputs.pointY - actualState.centerY, inputs.pointX - actualState.centerX) + Math.PI / 2;
+            control.velX = 1.0 * Math.cos(targetTheta + (actualState.theta));
+            control.velY = 1.0 * Math.sin(targetTheta + (actualState.theta));
+            control.velRot = 0.0;
             break;
 
         default:
@@ -242,7 +252,7 @@ function onSubmitControlOption()
             inputs.velRot = Number(document.getElementById("rotation").value) * Math.PI / 180.0;
             console.log("Theta, Speed, VelRot: " + inputs.theta + " " + inputs.speed + " " + inputs.velRot);
             break;
-            
+
         case "wheelControl":
             control.wheel1 = Number(document.getElementById("wheel1").value);
             control.wheel2 = Number(document.getElementById("wheel2").value);
@@ -250,7 +260,7 @@ function onSubmitControlOption()
             control.wheel4 = Number(document.getElementById("wheel4").value);
             console.log("Wheel 1-4: " + control.wheel1 + " " + control.wheel2 + " " + control.wheel3 + " " + control.wheel4);
             break;
-            
+
         case "point":
             inputs.pointX = Number(document.getElementById("PointX").value);
             inputs.pointY = Number(document.getElementById("PointY").value);
@@ -258,8 +268,16 @@ function onSubmitControlOption()
             console.log("(X, Y, theta): (" + inputs.pointX + ", " + inputs.pointY + ", " + inputs.theta + ")");
             break;
 
+        case "circle":
+            var inclination = Number(Math.PI / 180.0 * document.getElementById("inclination").value);
+            var radius = Number(document.getElementById("radius").value);
+            inputs.pointX = actualState.centerX + radius * Math.cos(inclination);
+            inputs.pointY = actualState.centerY + radius * Math.sin(inclination);
+            console.log("Circle (X, Y): " + inputs.pointX + ", " + inputs.pointY);
+            break;
+
         default:
-        control.option = ""
+            control.option = "";
             console.error("Invalid control option somehow");
             break;
     }

@@ -34,6 +34,7 @@
 			<option value="direct">Specify Direction, Speed, Rotation</option>
 			<option value="wheelControl">Specify Wheel Controls</option>
 			<option value="point">Specify Point</option>
+			<option value="circle">Circular Path</option>
 		</select>
 		<div id="options_direct">
 			<input type="number" id="direction">Theta (deg)</text> </br>
@@ -45,10 +46,13 @@
 			<input type="number" id="wheel4">Wheel Rotation Rate (rot/sec)</text> </br>
 			<input type="number" id="PointX">End Point X (ft)</text> </br>
 			<input type="number" id="PointY">End Point Y (ft)</text> </br>
+			<input type="number" id="radius">Radius (ft)</text> </br>
+			<input type="number" id="inclination">Inclination (deg)</text> </br>
+
 		</div>
 		<button type="button" onclick="onSubmitControlOption();">Submit Control Change</button>
 	</div>
 
-	<script type="text/javascript" src="RobotSim.js?version=4"></script>
+	<script type="text/javascript" src="RobotSim.js?version=5"></script>
 </body>
 </html>

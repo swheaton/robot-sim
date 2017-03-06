@@ -41,13 +41,16 @@ var actualState =
     // Units of feet
     centerX: 0,
     centerY: 0,
+    lastCenterX: 0,
+    lastCenterY: 0,
     // Radians
     theta: 0,
     // Ft/sec
     velX: 0,
     velY: 0,
     // Radians/sec
-    velRot: 0
+    velRot: 0,
+    stopwatchTime: 0,
 }
 
 /*var perceivedState = 
@@ -83,8 +86,13 @@ var inputs =
     velRot: 0,
     pointX: 0,
     pointY: 0,
+    // These two only used for starting point of circle
+    startX: 0,
+    startY: 0,
+
     radius: 0,
-    inclination: 0
+    inclination: 0,
+    time: 0
 }
 
 function drawGrid()
@@ -104,28 +112,51 @@ function drawGrid()
     context.stroke();
 }
 
+function robotXToCol(x)
+{
+	return (x - page.centerX + page.realGridWidth / 2) * page.pixelsPerFt;
+}
+
+function robotYToRow(y)
+{
+	return (page.centerY - y + page.realGridHeight / 2) * page.pixelsPerFt;
+}
+
 // Draws robot given its 
 function drawRobot()
 {
 	var ctx=document.getElementById("robotCanvas").getContext("2d");
 	ctx.save();
-	var centerCol = (actualState.centerX - page.centerX + page.realGridWidth / 2) * page.pixelsPerFt;
-	var centerRow = (page.centerY - actualState.centerY + page.realGridHeight / 2) * page.pixelsPerFt;
+	
+	// Draw the rectangular robot
+	var centerCol = robotXToCol(actualState.centerX);
+	var centerRow = robotYToRow(actualState.centerY);
 	ctx.translate(centerCol, centerRow);
 	ctx.rotate(actualState.theta);
 	ctx.fillStyle = "black";
 	ctx.fillRect(-robotSpecs.displayWidth/2, -robotSpecs.displayHeight/2,
 	    robotSpecs.displayWidth, robotSpecs.displayHeight);
+	
+	// Forward heading marker
 	ctx.fillStyle = "white";
 	ctx.fillRect(-robotSpecs.displayWidth/20, -robotSpecs.displayHeight/2 + 5,
 	    robotSpecs.displayWidth/10, robotSpecs.displayHeight/10);
-	    
+	   
+	// Center dot
 	ctx.fillStyle = "red";
 	ctx.beginPath();
 	ctx.arc(0, 0, 4, 0, 2 * Math.PI, false);
 	ctx.fill();
 	ctx.restore();
-	
+
+	// Draw path robot took
+	var pathCtx = document.getElementById("actualPathCanvas").getContext("2d");
+	pathCtx.strokeStyle = "red";
+	pathCtx.moveTo(robotXToCol(actualState.lastCenterX), robotYToRow(actualState.lastCenterY));
+	pathCtx.lineTo(robotXToCol(actualState.centerX), robotYToRow(actualState.centerY));
+	pathCtx.stroke();
+
+	// Update numerical outputs
 	document.getElementById("xPos").textContent = actualState.centerX.toFixed(2);
 	document.getElementById("yPos").textContent = actualState.centerY.toFixed(2);
 	document.getElementById("theta").textContent = (actualState.theta / Math.PI * 180.0).toFixed(1);
@@ -133,11 +164,13 @@ function drawRobot()
 
 function updateRobotPosition(timeDiff)
 {
+    actualState.lastCenterX = actualState.centerX;
+    actualState.lastCenterY = actualState.centerY;
     actualState.centerX = actualState.centerX + (timeDiff / 1000.0) * 
         (actualState.velX * Math.cos(actualState.theta) + actualState.velY * Math.sin(actualState.theta));
     actualState.centerY = actualState.centerY + (timeDiff / 1000.0) *
         (actualState.velX * Math.sin(-actualState.theta) + actualState.velY * Math.cos(actualState.theta));
-    actualState.theta = (actualState.theta - actualState.velRot * (timeDiff / 1000.0)) % (Math.PI * 2);
+    actualState.theta = (actualState.theta - actualState.velRot * (timeDiff / 1000.0) + 2 * Math.PI) % (Math.PI * 2);
         
     // Move robot back to center if it's about to go off screen.
     if (actualState.centerX <= page.centerX - (page.realGridWidth / 2 - 3) ||
@@ -171,10 +204,23 @@ function updateRobotState(timeDiff)
     updateRobotPosition(timeDiff);
 }
 
+// Returns time left on the timer, OR timeDiff if it is larger since we shouldn't use an interval smaller than the
+//	simulation cycle
+function getTimeLeft(timeDiff)
+{
+	return Math.max(timeDiff / 1000.0, inputs.time - ((new Date()).getTime() - actualState.stopwatchTime) / 1000.0);
+}
+
+function dist(x1, y1, x2, y2)
+{	
+	return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+}
+
 function updateRobotPlan(timeDiff)
 {
     // Set velocities based on control option and parameters
     var calcControls = true;
+	var timeLeft = getTimeLeft(timeDiff);
     switch (inputs.option)
     {
         case "direct":
@@ -195,33 +241,54 @@ function updateRobotPlan(timeDiff)
             }
             else
             {
-                var targetTheta = Math.atan2(inputs.pointY - actualState.centerY, inputs.pointX - actualState.centerX);
-                control.velX = 1.0 * Math.cos(targetTheta + (actualState.theta));
-                control.velY = 1.0 * Math.sin(targetTheta + (actualState.theta));
+		var distance = dist(actualState.centerX, actualState.centerY, inputs.pointX, inputs.pointY);
+		var targetTheta = Math.atan2(inputs.pointY - actualState.centerY, inputs.pointX - actualState.centerX);
+		control.velX = distance / timeLeft  * Math.cos(targetTheta + (actualState.theta));
+                control.velY = distance / timeLeft * Math.sin(targetTheta + (actualState.theta));
             }
-            if (inputs.theta - actualState.theta < 0.005)
-            {
+            if (Math.abs(inputs.theta - actualState.theta) < 0.005)
+	    {
                 control.velRot = 0.0;
             }
             else
             {
-                control.velRot = -1.0;
+                control.velRot = -(inputs.theta - actualState.theta) / timeLeft;
             }
             break;
             
         case "circle":
-            var targetTheta = Math.atan2(inputs.pointY - actualState.centerY, inputs.pointX - actualState.centerX) + Math.PI / 2;
-            control.velX = 1.0 * Math.cos(targetTheta + (actualState.theta));
-            control.velY = 1.0 * Math.sin(targetTheta + (actualState.theta));
-            control.velRot = 0.0;
+            var currInclination = (Math.atan2(inputs.pointY - actualState.centerY, inputs.pointX - actualState.centerX)
+	    				+ 2 * Math.PI) % (2 * Math.PI);
+	    var targetTheta = currInclination + Math.PI / 2;
+
+	    // Error correction
+	    targetTheta = targetTheta - (dist(inputs.pointX, inputs.pointY, actualState.centerX, actualState.centerY) - inputs.radius);
+	    
+	    // Stop case
+	    //console.log(timeLeft * 1000.0, 2 * timeDiff, currInclination - inputs.inclination);
+	    if (timeLeft * 1000.0 <= 2 * timeDiff && Math.abs(currInclination - inputs.inclination) < 0.05)
+            {
+                control.velX = 0.0;
+                control.velY = 0.0;
+            }
+	    else
+	    {
+	    	var angleLeft = (currInclination - inputs.inclination + 2 * Math.PI) % (2 * Math.PI);
+		if (angleLeft < 0.05 && timeLeft * 1000.0 > 2 * timeDiff)
+		{
+			angleLeft = 2 * Math.PI;
+		}
+		//console.log(angleLeft * inputs.radius / timeLeft);
+		    control.velX = angleLeft * inputs.radius / timeLeft * Math.cos(targetTheta + (actualState.theta));
+		    control.velY = angleLeft * inputs.radius / timeLeft * Math.sin(targetTheta + (actualState.theta));
+	    }
+	    control.velRot = 0.0;
             break;
 
         default:
             console.error("Invalid control option somehow");
             break;
     }
-
-    var a = 2;
 
     // Calculate wheel controls based on goal velocities
     if (calcControls === true)
@@ -244,6 +311,20 @@ function onSubmitControlOption()
     var controlName = controlElt.value;
     console.log("Changing control mode: " + controlName);
     inputs.option = controlName;
+    actualState.stopwatchTime = (new Date()).getTime();
+
+    // Clear goal path canvas
+    var goalCanvas = document.getElementById("goalPathCanvas");
+    var ctx = goalCanvas.getContext("2d");
+    ctx.clearRect(0, 0, goalCanvas.width, goalCanvas.height);
+    console.log("clearing: " + goalCanvas.width + " " + goalCanvas.height);
+
+    // Also clear actual path canvas too
+    var pathCanvas = document.getElementById("goalPathCanvas");
+    var pathCtx = pathCanvas.getContext("2d");
+    pathCtx.clearRect(0, 0, pathCanvas.width, pathCanvas.height);
+
+    inputs.time = Number(document.getElementById("time").value);
     switch (controlName)
     {
         case "direct":
@@ -265,15 +346,30 @@ function onSubmitControlOption()
             inputs.pointX = Number(document.getElementById("PointX").value);
             inputs.pointY = Number(document.getElementById("PointY").value);
             inputs.theta = Number(document.getElementById("direction").value) * Math.PI / 180.0;
-            console.log("(X, Y, theta): (" + inputs.pointX + ", " + inputs.pointY + ", " + inputs.theta + ")");
+	    console.log("(X, Y, theta): (" + inputs.pointX + ", " + inputs.pointY + ", " + inputs.theta + ")");
+
+	    // Draw line to point
+	    ctx.save();
+	    ctx.strokeStyle = "blue";
+	    ctx.moveTo(robotXToCol(actualState.centerX), robotYToRow(actualState.centerY));
+	    ctx.lineTo(robotXToCol(inputs.pointX), robotYToRow(inputs.pointY));
+	    ctx.stroke();
+	    ctx.restore();
+
             break;
 
         case "circle":
-            var inclination = Number(Math.PI / 180.0 * document.getElementById("inclination").value);
-            var radius = Number(document.getElementById("radius").value);
-            inputs.pointX = actualState.centerX + radius * Math.cos(inclination);
-            inputs.pointY = actualState.centerY + radius * Math.sin(inclination);
-            console.log("Circle (X, Y): " + inputs.pointX + ", " + inputs.pointY);
+            inputs.inclination = Number(Math.PI / 180.0 * document.getElementById("inclination").value);
+            inputs.radius = Number(document.getElementById("radius").value);
+            inputs.pointX = actualState.centerX + inputs.radius * Math.cos(inputs.inclination);
+            inputs.pointY = actualState.centerY + inputs.radius * Math.sin(inputs.inclination);
+
+	    ctx.save();
+	    ctx.strokeStyle = "blue";
+	    ctx.arc(robotXToCol(inputs.pointX), robotYToRow(inputs.pointY), inputs.radius * page.pixelsPerFt, 0, 2 * Math.PI, false);
+	    ctx.stroke();
+	    ctx.restore();
+            console.log("Circle (X, Y, radius): " + inputs.pointX + ", " + inputs.pointY + " " + inputs.radius);
             break;
 
         default:
@@ -281,6 +377,8 @@ function onSubmitControlOption()
             console.error("Invalid control option somehow");
             break;
     }
+    // Fix up theta to be in [0, 2PI) hopefully
+    inputs.theta = (inputs.theta + 2 * Math.PI ) % (2 * Math.PI);
 }
 
 function updateCanvas(canvas, timeDiff)

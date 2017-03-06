@@ -12,8 +12,14 @@
 	<canvas id="gridCanvas" width="900" height="450" 
 		style="position: absolute; border:1px solid #000000; z-index: 0">
 	</canvas>
-	<canvas id="robotCanvas" width="900" height="450"
+	<canvas id="goalPathCanvas" width="900" height="450"
 		style="position: absolute; border:1px solid #000000; z-index: 1">
+	</canvas>
+	<canvas id="actualPathCanvas" width="900" height="450"
+		style="position: absolute; border:1px solid #000000; z-index: 2">
+	</canvas>
+	<canvas id="robotCanvas" width="900" height="450"
+		style="position: absolute; border:1px solid #000000; z-index: 3">
 	</canvas>
 
 	<div style="float:right">
@@ -47,12 +53,13 @@
 			<input type="number" id="PointX">End Point X (ft)</text> </br>
 			<input type="number" id="PointY">End Point Y (ft)</text> </br>
 			<input type="number" id="radius">Radius (ft)</text> </br>
-			<input type="number" id="inclination">Inclination (deg)</text> </br>
+			<input type="number" id="inclination" value="0.0">Inclination (deg)</text> </br>
+			<input type="number" id="time" value="1.0">Time to Complete (s)</text> </br>
 
 		</div>
 		<button type="button" onclick="onSubmitControlOption();">Submit Control Change</button>
 	</div>
 
-	<script type="text/javascript" src="RobotSim.js?version=5"></script>
+	<script type="text/javascript" src="RobotSim.js?version=6"></script>
 </body>
 </html>

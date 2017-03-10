@@ -36,11 +36,13 @@
 	</div> <br /> <br /> <br />
 
 	<div style="float:right;">
-		<select id="controlOption">
+		<select id="controlOption" value="point">
+			<option value="eight">Figure Eight</option>
 			<option value="direct">Specify Direction, Speed, Rotation</option>
 			<option value="wheelControl">Specify Wheel Controls</option>
 			<option value="point">Specify Point</option>
 			<option value="circle">Circular Path</option>
+			<option value="rect">Rectangular Path</option>
 		</select>
 		<div id="options_direct">
 			<input type="number" id="direction">Theta (deg)</text> </br>
@@ -50,11 +52,15 @@
 			<input type="number" id="wheel2">Wheel Rotation Rate (rot/sec)</text> </br>
 			<input type="number" id="wheel3">Wheel Rotation Rate (rot/sec)</text> </br>
 			<input type="number" id="wheel4">Wheel Rotation Rate (rot/sec)</text> </br>
-			<input type="number" id="PointX">End Point X (ft)</text> </br>
-			<input type="number" id="PointY">End Point Y (ft)</text> </br>
-			<input type="number" id="radius">Radius (ft)</text> </br>
+			<input type="number" id="PointX" value="2">End Point X (ft)</text> </br>
+			<input type="number" id="PointY" value="2">End Point Y (ft)</text> </br>
+			<input type="text" id="Waypoints" value="0,2">Waypoints</text> </br>
+			<input type="number" id="radius" value="1.0">Radius (ft)</text> </br>
 			<input type="number" id="inclination" value="0.0">Inclination (deg)</text> </br>
-			<input type="number" id="time" value="1.0">Time to Complete (s)</text> </br>
+			<input type="number" id="inclination2" value="180.0">Inclination2 (deg)</text> </br>
+			<input type="number" id="time" value="5.0">Time to Complete (s)</text> </br>
+			<input type="number" id="length1" value="1.0">Side Length/Radius 1 (ft)</text> </br>
+			<input type="number" id="length2" value="2.0">Side Length/Radius 2 (ft)</text> </br>
 
 		</div>
 		<button type="button" onclick="onSubmitControlOption();">Submit Control Change</button>

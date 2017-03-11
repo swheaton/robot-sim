@@ -48,13 +48,8 @@ var actualState = {
     velY: 0,
     // Radians/sec
     velRot: 0,
-    stopwatchTime: 0,
+    stopwatchTime: 0
 }
-
-/*var perceivedState = 
-{
-    
-}*/
 
 var control = {
     // Angular rotation rate of wheel, positive means going forward
@@ -66,11 +61,7 @@ var control = {
     // Intended velocities
     velX: 0,
     velY: 0,
-    velRot: 0,
-
-    /*
-    heading: 0, // heading that we think we have
-    */
+    velRot: 0
 }
 
 var inputs = {
@@ -83,13 +74,17 @@ var inputs = {
     pointX: 0,
     pointY: 0,
     waypointArray: [],
-    // These two only used for starting point of circle
-    startX: 0,
-    startY: 0,
-
     radius: 0,
     inclination: 0,
     time: [0.0]
+}
+
+var goalPath = {
+    pointArray: [],
+    radii: [],
+    type: "none",
+    centerX: 0.0,
+    centerY: 0.0
 }
 
 function drawGrid() {
@@ -162,11 +157,11 @@ function clearDrawnPath(relocatePosition) {
     //var imageData = ctx.getImageData(0, 0, page.displayGridWidth, page.displayGridHeight);
     //pathCanvas.width= pathCanvas.width;
     //redrawGoalPath();
-    ctx.width = ctx.width;
+    //ctx.width = ctx.width;
     //ctx.putImageData(imageData, relocatePosition.row, relocatePosition.col);
-    var imageData = document.getElementById("hiddenGoalCanvas").getContext("2d").getImageData(0, 0, page.displayGridWidth, page.displayGridHeight);
-    ctx.putImageData(imageData, relocatePosition.row, relocatePosition.col);
-    console.log(relocatePosition);
+    //var imageData = document.getElementById("hiddenGoalCanvas").getContext("2d").getImageData(0, 0, page.displayGridWidth, page.displayGridHeight);
+    //ctx.putImageData(imageData, relocatePosition.row, relocatePosition.col);
+    //console.log(relocatePosition);
 }
 
 function updateRobotPosition(timeDiff) {
@@ -361,6 +356,47 @@ function updateRobotPlan(timeDiff) {
     document.getElementById("w4").textContent = control.wheel4.toFixed(2);
 }
 
+function drawGoalPath()
+{
+    // Clear goal path canvas
+    var goalCanvas = document.getElementById("goalPathCanvas");
+    goalCanvas.width = goalCanvas.width;
+    var ctx = goalCanvas.getContext("2d");
+
+    // Line path
+    switch (goalPath.type)
+    {
+        case "lines":
+            // Draw line to point
+            ctx.save();
+            ctx.beginPath();
+            ctx.strokeStyle = "blue";
+            ctx.moveTo(robotXToCol(goalPath.centerX), robotYToRow(goalPath.centerY));
+            for (var i = 0; i < goalPath.pointArray.length; i += 2) {
+                ctx.lineTo(robotXToCol(goalPath.pointArray[i]), robotYToRow(goalPath.pointArray[i + 1]));
+            }
+            ctx.stroke();
+            ctx.restore();
+            break;
+        case "circles":
+            ctx.save();
+            ctx.strokeStyle = "blue";
+            for (var i = 0; i < goalPath.pointArray.length; i += 2)
+            {
+                ctx.beginPath();
+                ctx.arc(robotXToCol(goalPath.pointArray[i]), robotYToRow(goalPath.pointArray[i + 1]),
+                    goalPath.radii[i/2] * page.pixelsPerFt, 0, 2 * Math.PI, false);
+                ctx.stroke();
+                ctx.closePath();
+            }
+            ctx.restore();
+            break;
+            
+        default:
+            break;
+    }
+}
+
 function onSubmitControlOption() {
     var controlElt = document.getElementById("controlOption");
     var controlName = controlElt.value;
@@ -368,16 +404,9 @@ function onSubmitControlOption() {
     inputs.option = controlName;
     actualState.stopwatchTime = (new Date()).getTime();
 
-    // Clear goal path canvas
-    var goalCanvas = document.getElementById("goalPathCanvas");
-    goalCanvas.width = goalCanvas.width;
-    var ctx = goalCanvas.getContext("2d");
-
     // Also clear actual path canvas too
     var pathCanvas = document.getElementById("actualPathCanvas");
     pathCanvas.width = pathCanvas.width;
-    //var pathCtx = pathCanvas.getContext("2d");
-    //pathCtx.clearRect(0, 0, pathCanvas.width, pathCanvas.height);
 
     inputs.waypointArray = [];
     inputs.time = [];
@@ -425,17 +454,10 @@ function onSubmitControlOption() {
 
             console.log("(theta: waypoints): " + inputs.theta + ": " + inputs.waypointArray);
             console.log("time" + " " + inputs.time);
-
-            // Draw line to point
-            ctx.save();
-            ctx.beginPath();
-            ctx.strokeStyle = "blue";
-            ctx.moveTo(robotXToCol(actualState.centerX), robotYToRow(actualState.centerY));
-            for (var i = 0; i < inputs.waypointArray.length; i += 2) {
-                ctx.lineTo(robotXToCol(inputs.waypointArray[i]), robotYToRow(inputs.waypointArray[i + 1]));
-            }
-            ctx.stroke();
-            ctx.restore();
+            
+            // Set up goal path for drawing
+            goalPath.type = "lines";
+            goalPath.pointArray = inputs.waypointArray;
 
             break;
 
@@ -470,16 +492,9 @@ function onSubmitControlOption() {
             inputs.time.push(inputs.time[1]);
             console.log("times: " + inputs.time);
 
-            // Draw rect
-            ctx.save();
-            ctx.beginPath();
-            ctx.strokeStyle = "blue";
-            ctx.moveTo(robotXToCol(actualState.centerX), robotYToRow(actualState.centerY));
-            for (var i = 0; i < inputs.waypointArray.length; i += 2) {
-                ctx.lineTo(robotXToCol(inputs.waypointArray[i]), robotYToRow(inputs.waypointArray[i + 1]));
-            }
-            ctx.stroke();
-            ctx.restore();
+            // Set up goal path for drawing
+            goalPath.type = "lines";
+            goalPath.pointArray = inputs.waypointArray;
 
             break;
 
@@ -489,18 +504,10 @@ function onSubmitControlOption() {
             inputs.waypointArray.push(actualState.centerX + inputs.radius * Math.cos(inputs.inclination));
             inputs.waypointArray.push(actualState.centerY + inputs.radius * Math.sin(inputs.inclination));
 
-            var TEMPCanvas = document.getElementById("hiddenGoalCanvas");
-            TEMPCanvas.width = TEMPCanvas.width;
-            var TEMPCtx = TEMPCanvas.getContext("2d");
-            
-            TEMPCtx.save();
-            TEMPCtx.beginPath();
-            TEMPCtx.strokeStyle = "blue";
-            TEMPCtx.arc(robotXToCol(inputs.waypointArray[0]), robotYToRow(inputs.waypointArray[1]), inputs.radius * page.pixelsPerFt, 0, 2 * Math.PI, false);
-            TEMPCtx.stroke();
-            var imageData = TEMPCtx.getImageData(0, 0, page.displayGridWidth, page.displayGridHeight);
-            ctx.putImageData(imageData, 0, 0);
             console.log("Circle (X, Y, radius): " + inputs.waypointArray[0] + ", " + inputs.waypointArray[1] + " " + inputs.radius);
+            goalPath.radii.push(inputs.radius);
+            goalPath.pointArray = inputs.waypointArray;
+            goalPath.type = "circles";
             break;
 
         case "eight":
@@ -513,18 +520,12 @@ function onSubmitControlOption() {
             inputs.waypointArray.push(actualState.centerX + inputs.radius2 * Math.cos(inputs.inclination2));
             inputs.waypointArray.push(actualState.centerY + inputs.radius2 * Math.sin(inputs.inclination2));
 
-            ctx.save();
-            ctx.beginPath();
-            ctx.strokeStyle = "blue";
-            ctx.arc(robotXToCol(inputs.waypointArray[0]), robotYToRow(inputs.waypointArray[1]), inputs.radius * page.pixelsPerFt, 0, 2 * Math.PI, false);
-            ctx.stroke();
-            console.log("Circle 1 (X, Y, radius): " + inputs.waypointArray[0] + ", " + inputs.waypointArray[1] + " " + inputs.radius);
+            goalPath.pointArray = inputs.waypointArray;
+            goalPath.radii.push(inputs.radius);
+            goalPath.radii.push(inputs.radius2);
+            goalPath.type = "circles";
 
-            ctx.beginPath();
-            ctx.strokeStyle = "blue";
-            ctx.arc(robotXToCol(inputs.waypointArray[2]), robotYToRow(inputs.waypointArray[3]), inputs.radius2 * page.pixelsPerFt, 0, 2 * Math.PI, false);
-            ctx.stroke();
-            ctx.restore();
+            console.log("Circle 1 (X, Y, radius): " + inputs.waypointArray[0] + ", " + inputs.waypointArray[1] + " " + inputs.radius);
             console.log("Circle 2 (X, Y, radius): " + inputs.waypointArray[2] + ", " + inputs.waypointArray[3] + " " + inputs.radius2);
             break;
 
@@ -533,6 +534,10 @@ function onSubmitControlOption() {
             console.error("Invalid control option somehow");
             break;
     }
+    goalPath.centerX = actualState.centerX;
+    goalPath.centerY = actualState.centerY;
+    drawGoalPath();
+
     // Fix up theta to be in [0, 2PI) hopefully
     inputs.theta = (inputs.theta + 2 * Math.PI) % (2 * Math.PI);
 }

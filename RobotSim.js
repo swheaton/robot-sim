@@ -3,14 +3,13 @@ window.requestAnimFrame = (function(callback) {
     return window.requestAnimationFrame || window.webkitRequestAnimationFrame ||
         window.mozRequestAnimationFrame || window.oRequestAnimationFrame ||
         window.msRequestAnimationFrame ||
-    function(callback) {
-        window.setTimeout(callback, 1000 / 60);
-    };
+        function(callback) {
+            window.setTimeout(callback, 1000 / 60);
+        };
 })();
 
 // Specs of the HTML page
-var page = new function()
-{
+var page = new function() {
     this.pixelsPerFt = 30;
 
     // Units in feet
@@ -27,8 +26,7 @@ var page = new function()
 }
 
 // Units of feet
-var robotSpecs = new function() 
-{
+var robotSpecs = new function() {
     this.realWidth = 2;
     this.realHeight = 4;
     this.wheelRadius = 1;
@@ -36,8 +34,7 @@ var robotSpecs = new function()
     this.displayHeight = this.realHeight * page.pixelsPerFt;
 }
 
-var actualState = 
-{
+var actualState = {
     // Units of feet
     centerX: 0,
     centerY: 0,
@@ -58,26 +55,24 @@ var actualState =
     
 }*/
 
-var control = 
-{
+var control = {
     // Angular rotation rate of wheel, positive means going forward
     wheel1: 0,
     wheel2: 0,
     wheel3: 0,
     wheel4: 0,
-    
+
     // Intended velocities
     velX: 0,
     velY: 0,
     velRot: 0,
-    
+
     /*
     heading: 0, // heading that we think we have
     */
 }
 
-var inputs =
-{
+var inputs = {
     // Input option - default to "direct" with 0 movement
     option: "direct",
     // Desired heading/speeds
@@ -96,15 +91,14 @@ var inputs =
     time: [0.0]
 }
 
-function drawGrid()
-{
+function drawGrid() {
     var context = document.getElementById("gridCanvas").getContext("2d");
-    for (var x = 0; x <= page.displayGridWidth; x += page.pixelsPerFt/2) {
+    for (var x = 0; x <= page.displayGridWidth; x += page.pixelsPerFt / 2) {
         context.moveTo(0.5 + x, 0);
         context.lineTo(0.5 + x, page.displayGridHeight);
     }
 
-    for (var x = 0; x <= page.displayGridHeight; x += page.pixelsPerFt/2) {
+    for (var x = 0; x <= page.displayGridHeight; x += page.pixelsPerFt / 2) {
         context.moveTo(0, 0.5 + x);
         context.lineTo(page.displayGridWidth, 0.5 + x);
     }
@@ -113,100 +107,92 @@ function drawGrid()
     context.stroke();
 }
 
-function robotXToCol(x)
-{
-	return (x - page.centerX + page.realGridWidth / 2) * page.pixelsPerFt;
+function robotXToCol(x) {
+    return (x - page.centerX + page.realGridWidth / 2) * page.pixelsPerFt;
 }
 
-function robotYToRow(y)
-{
-	return (page.centerY - y + page.realGridHeight / 2) * page.pixelsPerFt;
+function robotYToRow(y) {
+    return (page.centerY - y + page.realGridHeight / 2) * page.pixelsPerFt;
 }
 
 // Draws robot given its 
-function drawRobot()
-{
-	var ctx=document.getElementById("robotCanvas").getContext("2d");
-	ctx.save();
-	
-	// Draw the rectangular robot
-	var centerCol = robotXToCol(actualState.centerX);
-	var centerRow = robotYToRow(actualState.centerY);
-	ctx.translate(centerCol, centerRow);
-	ctx.rotate(actualState.theta);
-	ctx.fillStyle = "black";
-	ctx.fillRect(-robotSpecs.displayWidth/2, -robotSpecs.displayHeight/2,
-	    robotSpecs.displayWidth, robotSpecs.displayHeight);
-	
-	// Forward heading marker
-	ctx.fillStyle = "white";
-	ctx.fillRect(-robotSpecs.displayWidth/20, -robotSpecs.displayHeight/2 + 5,
-	    robotSpecs.displayWidth/10, robotSpecs.displayHeight/10);
-	   
-	// Center dot
-	ctx.fillStyle = "red";
-	ctx.beginPath();
-	ctx.arc(0, 0, 4, 0, 2 * Math.PI, false);
-	ctx.fill();
-	ctx.restore();
+function drawRobot() {
+    var ctx = document.getElementById("robotCanvas").getContext("2d");
+    ctx.save();
 
-	// Draw path robot took
-	var pathCtx = document.getElementById("actualPathCanvas").getContext("2d");
-	pathCtx.strokeStyle = "red";
-	pathCtx.moveTo(robotXToCol(actualState.lastCenterX), robotYToRow(actualState.lastCenterY));
-	pathCtx.lineTo(robotXToCol(actualState.centerX), robotYToRow(actualState.centerY));
-	pathCtx.stroke();
+    // Draw the rectangular robot
+    var centerCol = robotXToCol(actualState.centerX);
+    var centerRow = robotYToRow(actualState.centerY);
+    ctx.translate(centerCol, centerRow);
+    ctx.rotate(actualState.theta);
+    ctx.fillStyle = "black";
+    ctx.fillRect(-robotSpecs.displayWidth / 2, -robotSpecs.displayHeight / 2,
+        robotSpecs.displayWidth, robotSpecs.displayHeight);
 
-	// Update numerical outputs
-	document.getElementById("xPos").textContent = actualState.centerX.toFixed(2);
-	document.getElementById("yPos").textContent = actualState.centerY.toFixed(2);
-	document.getElementById("theta").textContent = (actualState.theta / Math.PI * 180.0).toFixed(1);
+    // Forward heading marker
+    ctx.fillStyle = "white";
+    ctx.fillRect(-robotSpecs.displayWidth / 20, -robotSpecs.displayHeight / 2 + 5,
+        robotSpecs.displayWidth / 10, robotSpecs.displayHeight / 10);
+
+    // Center dot
+    ctx.fillStyle = "red";
+    ctx.beginPath();
+    ctx.arc(0, 0, 4, 0, 2 * Math.PI, false);
+    ctx.fill();
+    ctx.restore();
+
+    // Draw path robot took
+    var pathCtx = document.getElementById("actualPathCanvas").getContext("2d");
+    pathCtx.strokeStyle = "red";
+    pathCtx.moveTo(robotXToCol(actualState.lastCenterX), robotYToRow(actualState.lastCenterY));
+    pathCtx.lineTo(robotXToCol(actualState.centerX), robotYToRow(actualState.centerY));
+    pathCtx.stroke();
+
+    // Update numerical outputs
+    document.getElementById("xPos").textContent = actualState.centerX.toFixed(2);
+    document.getElementById("yPos").textContent = actualState.centerY.toFixed(2);
+    document.getElementById("theta").textContent = (actualState.theta / Math.PI * 180.0).toFixed(1);
 }
 
 // TODO don't just clear it, try to move it somehow so it stays.
-function clearDrawnPath()
-{
-	var pathCanvas = document.getElementById("actualPathCanvas");
-	pathCanvas.getContext("2d").clearRect(0, 0, pathCanvas.width, pathCanvas.height);
+function clearDrawnPath() {
+    var pathCanvas = document.getElementById("actualPathCanvas");
+    pathCanvas.getContext("2d").clearRect(0, 0, pathCanvas.width, pathCanvas.height);
 }
 
-function updateRobotPosition(timeDiff)
-{
+function updateRobotPosition(timeDiff) {
     actualState.lastCenterX = actualState.centerX;
     actualState.lastCenterY = actualState.centerY;
-    actualState.centerX = actualState.centerX + (timeDiff / 1000.0) * 
+    actualState.centerX = actualState.centerX + (timeDiff / 1000.0) *
         (actualState.velX * Math.cos(actualState.theta) + actualState.velY * Math.sin(actualState.theta));
     actualState.centerY = actualState.centerY + (timeDiff / 1000.0) *
         (actualState.velX * Math.sin(-actualState.theta) + actualState.velY * Math.cos(actualState.theta));
     actualState.theta = (actualState.theta - actualState.velRot * (timeDiff / 1000.0) + 2 * Math.PI) % (Math.PI * 2);
-        
+
     // Move robot back to center if it's about to go off screen.
     if (actualState.centerX <= page.centerX - (page.realGridWidth / 2 - 3) ||
-        actualState.centerX >= page.centerX + (page.realGridWidth / 2 - 3))
-    {
+        actualState.centerX >= page.centerX + (page.realGridWidth / 2 - 3)) {
         page.centerX = actualState.centerX;
         page.centerY = actualState.centerY;
-	clearDrawnPath();
+        clearDrawnPath();
     }
     if (actualState.centerY <= page.centerY - (page.realGridHeight / 2 - 3) ||
-        actualState.centerY >= page.centerY + (page.realGridHeight / 2 - 3))
-    {
+        actualState.centerY >= page.centerY + (page.realGridHeight / 2 - 3)) {
         page.centerX = actualState.centerX;
         page.centerY = actualState.centerY;
-	clearDrawnPath();
+        clearDrawnPath();
     }
 }
 
 // Update robot state given control signals and last state
-function updateRobotState(timeDiff)
-{
-    actualState.velX = (robotSpecs.wheelRadius/4) *
-        (control.wheel1-control.wheel2-control.wheel3+control.wheel4);
-    actualState.velY = (robotSpecs.wheelRadius/4) *
-        (control.wheel1+control.wheel2+control.wheel3+control.wheel4);
-    actualState.velRot = robotSpecs.wheelRadius/
-        (4*(robotSpecs.realWidth/2 + robotSpecs.realHeight/2)) *
-        (-control.wheel1+control.wheel2-control.wheel3+control.wheel4);
+function updateRobotState(timeDiff) {
+    actualState.velX = (robotSpecs.wheelRadius / 4) *
+        (control.wheel1 - control.wheel2 - control.wheel3 + control.wheel4);
+    actualState.velY = (robotSpecs.wheelRadius / 4) *
+        (control.wheel1 + control.wheel2 + control.wheel3 + control.wheel4);
+    actualState.velRot = robotSpecs.wheelRadius /
+        (4 * (robotSpecs.realWidth / 2 + robotSpecs.realHeight / 2)) *
+        (-control.wheel1 + control.wheel2 - control.wheel3 + control.wheel4);
 
     document.getElementById("velX").textContent = actualState.velX.toFixed(2);
     document.getElementById("velY").textContent = actualState.velY.toFixed(2);
@@ -216,38 +202,37 @@ function updateRobotState(timeDiff)
 
 // Returns time left on the timer, OR timeDiff if it is larger since we shouldn't use an interval smaller than the
 //	simulation cycle
-function getTimeLeft(timeDiff)
-{
-	return Math.max(timeDiff / 1000.0, inputs.time[0] - ((new Date()).getTime() - actualState.stopwatchTime) / 1000.0);
+function getTimeLeft(timeDiff) {
+    return Math.max(timeDiff / 1000.0, inputs.time[0] - ((new Date()).getTime() - actualState.stopwatchTime) / 1000.0);
 }
 
-function dist(x1, y1, x2, y2)
-{	
-	return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+function dist(x1, y1, x2, y2) {
+    return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
 }
 
-function getPoint()
-{
-	if (inputs.waypointArray.length < 2)
-	{
-		return {x: 0, y: 0};
-	}
-	else
-	{
-		return {x: Number(inputs.waypointArray[0]), y: Number(inputs.waypointArray[1])};
-	}
+function getPoint() {
+    if (inputs.waypointArray.length < 2) {
+        return {
+            x: 0,
+            y: 0
+        };
+    }
+    else {
+        return {
+            x: Number(inputs.waypointArray[0]),
+            y: Number(inputs.waypointArray[1])
+        };
+    }
 }
 
-function updateRobotPlan(timeDiff)
-{
+function updateRobotPlan(timeDiff) {
     // Set velocities based on control option and parameters
     var calcControls = true;
-	var timeLeft = getTimeLeft(timeDiff);
-    switch (inputs.option)
-    {
+    var timeLeft = getTimeLeft(timeDiff);
+    switch (inputs.option) {
         case "direct":
-            control.velX = inputs.speed * Math.cos(inputs.theta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/));
-            control.velY = inputs.speed * Math.sin(inputs.theta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/));
+            control.velX = inputs.speed * Math.cos(inputs.theta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/ ));
+            control.velY = inputs.speed * Math.sin(inputs.theta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/ ));
             control.velRot = inputs.velRot;
             break;
 
@@ -256,78 +241,69 @@ function updateRobotPlan(timeDiff)
             break;
 
         case "point":
-	case "rect":
-		var point = getPoint();
-		//console.log("curr point: " + point);
-            if (Math.abs(point.y - actualState.centerY) < 0.005 && Math.abs(point.x - actualState.centerX) < 0.005)
-            {
+        case "rect":
+            var point = getPoint();
+            //console.log("curr point: " + point);
+            if (Math.abs(point.y - actualState.centerY) < 0.005 && Math.abs(point.x - actualState.centerX) < 0.005) {
                 control.velX = 0.0;
                 control.velY = 0.0;
-		//console.log(0);
-		if (inputs.waypointArray.length > 2)
-		{
-			// We've completed a waypoint
-			    inputs.time = inputs.time.splice(1, inputs.time.length);
-			    actualState.stopwatchTime = (new Date()).getTime();
-			inputs.waypointArray = inputs.waypointArray.splice(2, inputs.waypointArray.length);
-            		console.log("popped. time: " + inputs.time + " points: " + inputs.waypointArray);
-		}
-	    }
-            else
-            {
-		var distance = dist(actualState.centerX, actualState.centerY, point.x, point.y);
-		var targetTheta = Math.atan2(point.y - actualState.centerY, point.x - actualState.centerX);
-		control.velX = distance / timeLeft  * Math.cos(targetTheta + (actualState.theta));
+                //console.log(0);
+                if (inputs.waypointArray.length > 2) {
+                    // We've completed a waypoint
+                    inputs.time = inputs.time.splice(1, inputs.time.length);
+                    actualState.stopwatchTime = (new Date()).getTime();
+                    inputs.waypointArray = inputs.waypointArray.splice(2, inputs.waypointArray.length);
+                    console.log("popped. time: " + inputs.time + " points: " + inputs.waypointArray);
+                }
+            }
+            else {
+                var distance = dist(actualState.centerX, actualState.centerY, point.x, point.y);
+                var targetTheta = Math.atan2(point.y - actualState.centerY, point.x - actualState.centerX);
+                control.velX = distance / timeLeft * Math.cos(targetTheta + (actualState.theta));
                 control.velY = distance / timeLeft * Math.sin(targetTheta + (actualState.theta));
-		//console.log(control.velX, control.velY);
-	    }
-            if (Math.abs(inputs.theta - actualState.theta) < 0.005)
-	    {
+                //console.log(control.velX, control.velY);
+            }
+            if (Math.abs(inputs.theta - actualState.theta) < 0.005) {
                 control.velRot = 0.0;
             }
-            else
-            {
+            else {
                 control.velRot = -(inputs.theta - actualState.theta) / timeLeft;
             }
             break;
-           
-	case "eight":
-        case "circle":
-            var currInclination = (Math.atan2(inputs.waypointArray[1] - actualState.centerY, inputs.waypointArray[0] - actualState.centerX)
-	    				+ 2 * Math.PI) % (2 * Math.PI);
-	    var targetTheta = currInclination + Math.PI / 2;
 
-	    // Error correction
-	    targetTheta = targetTheta - (dist(inputs.waypointArray[0], inputs.waypointArray[1], actualState.centerX, actualState.centerY) - inputs.radius);
-	    
-	    // Stop case
-	    if (timeLeft * 1000.0 <= 2 * timeDiff && Math.abs(currInclination - inputs.inclination) < 0.05)
-            {
+        case "eight":
+        case "circle":
+            var currInclination = (Math.atan2(inputs.waypointArray[1] - actualState.centerY, inputs.waypointArray[0] - actualState.centerX) +
+                2 * Math.PI) % (2 * Math.PI);
+            var targetTheta = currInclination + Math.PI / 2;
+
+            // Error correction
+            targetTheta = targetTheta - (dist(inputs.waypointArray[0], inputs.waypointArray[1], actualState.centerX, actualState.centerY) - inputs.radius);
+
+            // Stop case
+            if (timeLeft * 1000.0 <= 2 * timeDiff && Math.abs(currInclination - inputs.inclination) < 0.05) {
                 control.velX = 0.0;
                 control.velY = 0.0;
 
-		// Got more points to take care of
-		if (inputs.waypointArray.length > 2)
-		{
-			inputs.waypointArray = inputs.waypointArray.splice(2, inputs.waypointArray.length);
-			    actualState.stopwatchTime = (new Date()).getTime();
+                // Got more points to take care of
+                if (inputs.waypointArray.length > 2) {
+                    inputs.waypointArray = inputs.waypointArray.splice(2, inputs.waypointArray.length);
+                    actualState.stopwatchTime = (new Date()).getTime();
 
-			    // TODO REMOVE HACK
-			 inputs.inclination = inputs.inclination2;
-			 inputs.radius = inputs.radius2;
-		}
+                    // TODO REMOVE HACK
+                    inputs.inclination = inputs.inclination2;
+                    inputs.radius = inputs.radius2;
+                }
             }
-	    else
-	    {
-	    	var angleLeft = (currInclination - inputs.inclination + 2 * Math.PI) % (2 * Math.PI);
-		if (angleLeft < 0.05 && timeLeft * 1000.0 > 2 * timeDiff)
-		{
-			angleLeft = 2 * Math.PI;
-		}
-		    control.velX = angleLeft * inputs.radius / timeLeft * Math.cos(targetTheta + (actualState.theta));
-		    control.velY = angleLeft * inputs.radius / timeLeft * Math.sin(targetTheta + (actualState.theta));
-	    }
-	    control.velRot = 0.0;
+            else {
+                var angleLeft = (currInclination - inputs.inclination + 2 * Math.PI) % (2 * Math.PI);
+                if (angleLeft < 0.05 && timeLeft * 1000.0 > 2 * timeDiff) {
+                    angleLeft = 2 * Math.PI;
+                }
+                control.velX = angleLeft * inputs.radius / timeLeft * Math.cos(targetTheta + (actualState.theta));
+                control.velY = angleLeft * inputs.radius / timeLeft * Math.sin(targetTheta + (actualState.theta));
+            }
+            control.velRot = 0.0;
             break;
 
         default:
@@ -336,8 +312,7 @@ function updateRobotPlan(timeDiff)
     }
 
     // Calculate wheel controls based on goal velocities
-    if (calcControls === true)
-    {
+    if (calcControls === true) {
         control.wheel1 = (control.velY + control.velX - 3 * control.velRot) / robotSpecs.wheelRadius;
         control.wheel2 = (control.velY - control.velX + 3 * control.velRot) / robotSpecs.wheelRadius;
         control.wheel3 = (control.velY - control.velX - 3 * control.velRot) / robotSpecs.wheelRadius;
@@ -350,8 +325,7 @@ function updateRobotPlan(timeDiff)
     document.getElementById("w4").textContent = control.wheel4.toFixed(2);
 }
 
-function onSubmitControlOption()
-{
+function onSubmitControlOption() {
     var controlElt = document.getElementById("controlOption");
     var controlName = controlElt.value;
     console.log("Changing control mode: " + controlName);
@@ -369,11 +343,10 @@ function onSubmitControlOption()
     //var pathCtx = pathCanvas.getContext("2d");
     //pathCtx.clearRect(0, 0, pathCanvas.width, pathCanvas.height);
 
-	inputs.waypointArray = [];
+    inputs.waypointArray = [];
     inputs.time = [];
     inputs.time.push(Number(document.getElementById("time").value));
-    switch (controlName)
-    {
+    switch (controlName) {
         case "direct":
             inputs.theta = Number(document.getElementById("direction").value) * Math.PI / 180.0;
             inputs.speed = Number(document.getElementById("speed").value);
@@ -392,126 +365,122 @@ function onSubmitControlOption()
         case "point":
             inputs.theta = Number(document.getElementById("direction").value) * Math.PI / 180.0;
 
-		// Get waypoints
-		inputs.waypointArray = document.getElementById("Waypoints").value.split(",");
+            // Get waypoints
+            inputs.waypointArray = document.getElementById("Waypoints").value.split(",");
             inputs.waypointArray.push(Number(document.getElementById("PointX").value));
             inputs.waypointArray.push(Number(document.getElementById("PointY").value));
 
-		// Break up path into time chunks based on distance
-		var overallTime = inputs.time[0];
-		inputs.time = [];
-		inputs.time.push(overallTime * dist(actualState.centerX, actualState.centerY,
-			inputs.waypointArray[0], inputs.waypointArray[1]));
-		var totalDist = dist(actualState.centerX, actualState.centerY,
-			inputs.waypointArray[0], inputs.waypointArray[1]);
-		for (var i = 2; i < inputs.waypointArray.length; i+=2)
-		{
-			inputs.time.push(overallTime * dist(inputs.waypointArray[i-2], inputs.waypointArray[i-1],
-				inputs.waypointArray[i], inputs.waypointArray[i+1]));
-			totalDist += dist(inputs.waypointArray[i-2], inputs.waypointArray[i-1],
-				inputs.waypointArray[i], inputs.waypointArray[i+1])
-		}
-		for (var i = 0; i < inputs.time.length; i++)
-		{
-			inputs.time[i] /= totalDist;
-		}
+            // Break up path into time chunks based on distance
+            var overallTime = inputs.time[0];
+            inputs.time = [];
+            inputs.time.push(overallTime * dist(actualState.centerX, actualState.centerY,
+                inputs.waypointArray[0], inputs.waypointArray[1]));
+            var totalDist = dist(actualState.centerX, actualState.centerY,
+                inputs.waypointArray[0], inputs.waypointArray[1]);
+            for (var i = 2; i < inputs.waypointArray.length; i += 2) {
+                inputs.time.push(overallTime * dist(inputs.waypointArray[i - 2], inputs.waypointArray[i - 1],
+                    inputs.waypointArray[i], inputs.waypointArray[i + 1]));
+                totalDist += dist(inputs.waypointArray[i - 2], inputs.waypointArray[i - 1],
+                    inputs.waypointArray[i], inputs.waypointArray[i + 1])
+            }
+            for (var i = 0; i < inputs.time.length; i++) {
+                inputs.time[i] /= totalDist;
+            }
 
-	    console.log("(theta: waypoints): " + inputs.theta + ": " + inputs.waypointArray);
-		console.log("time" + " " + inputs.time);
+            console.log("(theta: waypoints): " + inputs.theta + ": " + inputs.waypointArray);
+            console.log("time" + " " + inputs.time);
 
-	    // Draw line to point
-	    ctx.save();
-	    ctx.strokeStyle = "blue";
-	    ctx.moveTo(robotXToCol(actualState.centerX), robotYToRow(actualState.centerY));
-	    for (var i = 0; i < inputs.waypointArray.length; i+=2)
-	    {
-	    	ctx.lineTo(robotXToCol(inputs.waypointArray[i]), robotYToRow(inputs.waypointArray[i+1]));
-	    }
-	    ctx.stroke();
-	    ctx.restore();
+            // Draw line to point
+            ctx.save();
+            ctx.strokeStyle = "blue";
+            ctx.moveTo(robotXToCol(actualState.centerX), robotYToRow(actualState.centerY));
+            for (var i = 0; i < inputs.waypointArray.length; i += 2) {
+                ctx.lineTo(robotXToCol(inputs.waypointArray[i]), robotYToRow(inputs.waypointArray[i + 1]));
+            }
+            ctx.stroke();
+            ctx.restore();
 
             break;
 
-	case "rect":
-		var length1 = Number(document.getElementById("length1").value);
-		var length2 = Number(document.getElementById("length2").value);
-		    inputs.inclination = Number(Math.PI / 180.0 * document.getElementById("inclination").value);
-		inputs.inclination = (inputs.inclination + Math.PI * 2) % (Math.PI * 2);
+        case "rect":
+            var length1 = Number(document.getElementById("length1").value);
+            var length2 = Number(document.getElementById("length2").value);
+            inputs.inclination = Number(Math.PI / 180.0 * document.getElementById("inclination").value);
+            inputs.inclination = (inputs.inclination + Math.PI * 2) % (Math.PI * 2);
 
-		// Add waypoints as corners of rect
-		var theAngle = Math.atan(length2 / length1);
-		console.log(theAngle);
-		var hypotenuse = Math.sqrt(length2 * length2 + length2 * length2);
-		inputs.waypointArray.push(actualState.centerX + length1 * Math.cos(theAngle + inputs.inclination));
-		inputs.waypointArray.push(actualState.centerY + length1 * Math.sin(theAngle + inputs.inclination));
-		inputs.waypointArray.push(actualState.centerX + hypotenuse * Math.cos(inputs.inclination));
-		inputs.waypointArray.push(actualState.centerY + hypotenuse * Math.sin(inputs.inclination));
-		inputs.waypointArray.push(inputs.waypointArray[2] - length1 * Math.cos(theAngle + inputs.inclination));
-		inputs.waypointArray.push(inputs.waypointArray[3] - length1 * Math.sin(theAngle + inputs.inclination));
-		
-		// Final point is starting position
-		inputs.waypointArray.push(actualState.centerX);
-		inputs.waypointArray.push(actualState.centerY);
-		
-		console.log("point and waypoints: " + inputs.pointX + "," + inputs.pointY + " " + inputs.waypointArray);
+            // Add waypoints as corners of rect
+            var theAngle = Math.atan(length2 / length1);
+            console.log(theAngle);
+            var hypotenuse = Math.sqrt(length2 * length2 + length2 * length2);
+            inputs.waypointArray.push(actualState.centerX + length1 * Math.cos(theAngle + inputs.inclination));
+            inputs.waypointArray.push(actualState.centerY + length1 * Math.sin(theAngle + inputs.inclination));
+            inputs.waypointArray.push(actualState.centerX + hypotenuse * Math.cos(inputs.inclination));
+            inputs.waypointArray.push(actualState.centerY + hypotenuse * Math.sin(inputs.inclination));
+            inputs.waypointArray.push(inputs.waypointArray[2] - length1 * Math.cos(theAngle + inputs.inclination));
+            inputs.waypointArray.push(inputs.waypointArray[3] - length1 * Math.sin(theAngle + inputs.inclination));
 
-		// Fix time
-		var overallTime = inputs.time[0];
-		inputs.time[0] = overallTime * (length1 / (length1 + length2) / 2);
-		inputs.time.push(overallTime * (length2 / (length1 + length2) / 2));
-		inputs.time.push(inputs.time[0]);
-		inputs.time.push(inputs.time[1]);
-		console.log("times: " + inputs.time);
+            // Final point is starting position
+            inputs.waypointArray.push(actualState.centerX);
+            inputs.waypointArray.push(actualState.centerY);
 
-	    // Draw rect
-	    ctx.save();
-	    ctx.strokeStyle = "blue";
-	    ctx.moveTo(robotXToCol(actualState.centerX), robotYToRow(actualState.centerY));
-	    for (var i = 0; i < inputs.waypointArray.length; i+=2)
-	    {
-	    	ctx.lineTo(robotXToCol(inputs.waypointArray[i]), robotYToRow(inputs.waypointArray[i+1]));
-	    }
-	    ctx.stroke();
-	    ctx.restore();
+            console.log("point and waypoints: " + inputs.pointX + "," + inputs.pointY + " " + inputs.waypointArray);
 
-		break;
+            // Fix time
+            var overallTime = inputs.time[0];
+            inputs.time[0] = overallTime * (length1 / (length1 + length2) / 2);
+            inputs.time.push(overallTime * (length2 / (length1 + length2) / 2));
+            inputs.time.push(inputs.time[0]);
+            inputs.time.push(inputs.time[1]);
+            console.log("times: " + inputs.time);
+
+            // Draw rect
+            ctx.save();
+            ctx.strokeStyle = "blue";
+            ctx.moveTo(robotXToCol(actualState.centerX), robotYToRow(actualState.centerY));
+            for (var i = 0; i < inputs.waypointArray.length; i += 2) {
+                ctx.lineTo(robotXToCol(inputs.waypointArray[i]), robotYToRow(inputs.waypointArray[i + 1]));
+            }
+            ctx.stroke();
+            ctx.restore();
+
+            break;
 
         case "circle":
             inputs.inclination = Number(Math.PI / 180.0 * document.getElementById("inclination").value);
             inputs.radius = Number(document.getElementById("radius").value);
-	    inputs.waypointArray.push(actualState.centerX + inputs.radius * Math.cos(inputs.inclination));
+            inputs.waypointArray.push(actualState.centerX + inputs.radius * Math.cos(inputs.inclination));
             inputs.waypointArray.push(actualState.centerY + inputs.radius * Math.sin(inputs.inclination));
 
-	    ctx.save();
-	    ctx.strokeStyle = "blue";
-	    ctx.arc(robotXToCol(inputs.waypointArray[0]), robotYToRow(inputs.waypointArray[1]), inputs.radius * page.pixelsPerFt, 0, 2 * Math.PI, false);
-	    ctx.stroke();
-	    ctx.restore();
+            ctx.save();
+            ctx.strokeStyle = "blue";
+            ctx.arc(robotXToCol(inputs.waypointArray[0]), robotYToRow(inputs.waypointArray[1]), inputs.radius * page.pixelsPerFt, 0, 2 * Math.PI, false);
+            ctx.stroke();
+            ctx.restore();
             console.log("Circle (X, Y, radius): " + inputs.waypointArray[0] + ", " + inputs.waypointArray[1] + " " + inputs.radius);
             break;
 
-	case "eight":
-	    inputs.inclination = Number(Math.PI / 180.0 * document.getElementById("inclination").value);
-	    inputs.inclination2 = Number(Math.PI / 180.0 * document.getElementById("inclination2").value);
+        case "eight":
+            inputs.inclination = Number(Math.PI / 180.0 * document.getElementById("inclination").value);
+            inputs.inclination2 = Number(Math.PI / 180.0 * document.getElementById("inclination2").value);
             inputs.radius = Number(document.getElementById("length1").value);
             inputs.radius2 = Number(document.getElementById("length2").value);
-	    inputs.waypointArray.push(actualState.centerX + inputs.radius * Math.cos(inputs.inclination));
+            inputs.waypointArray.push(actualState.centerX + inputs.radius * Math.cos(inputs.inclination));
             inputs.waypointArray.push(actualState.centerY + inputs.radius * Math.sin(inputs.inclination));
             inputs.waypointArray.push(actualState.centerX + inputs.radius2 * Math.cos(inputs.inclination2));
             inputs.waypointArray.push(actualState.centerY + inputs.radius2 * Math.sin(inputs.inclination2));
 
-	    ctx.save();
-	    ctx.strokeStyle = "blue";
-	    ctx.arc(robotXToCol(inputs.waypointArray[0]), robotYToRow(inputs.waypointArray[1]), inputs.radius * page.pixelsPerFt, 0, 2 * Math.PI, false);
-	    ctx.stroke();
+            ctx.save();
+            ctx.strokeStyle = "blue";
+            ctx.arc(robotXToCol(inputs.waypointArray[0]), robotYToRow(inputs.waypointArray[1]), inputs.radius * page.pixelsPerFt, 0, 2 * Math.PI, false);
+            ctx.stroke();
             console.log("Circle 1 (X, Y, radius): " + inputs.waypointArray[0] + ", " + inputs.waypointArray[1] + " " + inputs.radius);
 
-	    ctx.strokeStyle = "blue";
-	    ctx.arc(robotXToCol(inputs.waypointArray[2]), robotYToRow(inputs.waypointArray[3]), inputs.radius2 * page.pixelsPerFt, 0, 2 * Math.PI, false);
-	    ctx.stroke();
-	    ctx.restore();
+            ctx.strokeStyle = "blue";
+            ctx.arc(robotXToCol(inputs.waypointArray[2]), robotYToRow(inputs.waypointArray[3]), inputs.radius2 * page.pixelsPerFt, 0, 2 * Math.PI, false);
+            ctx.stroke();
+            ctx.restore();
             console.log("Circle 2 (X, Y, radius): " + inputs.waypointArray[2] + ", " + inputs.waypointArray[3] + " " + inputs.radius2);
-		break;
+            break;
 
         default:
             control.option = "";
@@ -519,11 +488,10 @@ function onSubmitControlOption()
             break;
     }
     // Fix up theta to be in [0, 2PI) hopefully
-    inputs.theta = (inputs.theta + 2 * Math.PI ) % (2 * Math.PI);
+    inputs.theta = (inputs.theta + 2 * Math.PI) % (2 * Math.PI);
 }
 
-function updateCanvas(canvas, timeDiff)
-{
+function updateCanvas(canvas, timeDiff) {
     // Clear the canvas before drawing
     var context = canvas.getContext("2d");
     context.clearRect(0, 0, canvas.width, canvas.height);
@@ -534,11 +502,10 @@ function updateCanvas(canvas, timeDiff)
 }
 
 // Animate the frame
-function animate(canvas, currTime)
-{
+function animate(canvas, currTime) {
     // update
     var time = (new Date()).getTime();
-    var timeDiff = time-currTime;
+    var timeDiff = time - currTime;
 
     updateCanvas(document.getElementById("robotCanvas"), timeDiff);
 

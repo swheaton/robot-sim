@@ -699,6 +699,7 @@ function onMouseup()
 }
 
 document.getElementById("robotCanvas").addEventListener('click', onClick, false);
+window.addEventListener('keypress', onClick, false);
 document.getElementById("robotCanvas").addEventListener('mouseover', onMouseover, false);
 document.getElementById("robotCanvas").addEventListener('mousemove', onMousemove, false);
 document.getElementById("robotCanvas").addEventListener('mousedown', onMousedown, false);

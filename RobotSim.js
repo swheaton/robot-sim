@@ -48,7 +48,8 @@ var actualState = {
     velY: 0,
     // Radians/sec
     velRot: 0,
-    stopwatchTime: 0
+    stopwatchTime: 0,
+    forceStop: false
 }
 
 var control = {
@@ -66,7 +67,7 @@ var control = {
 
 var inputs = {
     // Input option - default to "direct" with 0 movement
-    option: "direct",
+    option: "none",
     // Desired heading/speeds
     theta: 0,
     speed: 0,
@@ -228,11 +229,12 @@ function sanitizeVelocities()
 {
     var velocity = Math.sqrt(control.velX * control.velX + control.velY * control.velY);
     // Should never be trying to go more than slightly over max speed
-    if (velocity > robotSpecs.maxVelocity * 1.5)
+    if (velocity > robotSpecs.maxVelocity * 5.0)
     {
         console.error("Tried to go too fast. Something went wrong. Just stopping because we're most likely done anyways.");
         control.velX = 0.0;
         control.velY = 0.0;
+        this.forceStop = true;
     }
     // Velocity is slightly over the max, so scale it back to 15.
     else if (velocity > robotSpecs.maxVelocity)
@@ -249,6 +251,11 @@ function updateRobotPlan(timeDiff) {
     var calcControls = true;
     var timeLeft = getTimeLeft(timeDiff);
     switch (inputs.option) {
+        case "none":
+            control.velX = 0.0;
+            control.velY = 0.0;
+            control.velRot = 0.0;
+            break;
         case "direct":
             control.velX = inputs.speed * Math.cos(inputs.theta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/ ));
             control.velY = inputs.speed * Math.sin(inputs.theta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/ ));
@@ -263,7 +270,7 @@ function updateRobotPlan(timeDiff) {
         case "rect":
             var point = getPoint();
             //console.log("curr point: " + point);
-            if (Math.abs(point.y - actualState.centerY) < 0.005 && Math.abs(point.x - actualState.centerX) < 0.005) {
+            if (this.forceStop == true || Math.abs(point.y - actualState.centerY) < 0.005 && Math.abs(point.x - actualState.centerX) < 0.005) {
                 control.velX = 0.0;
                 control.velY = 0.0;
                 //console.log(0);
@@ -274,6 +281,7 @@ function updateRobotPlan(timeDiff) {
                     inputs.waypointArray = inputs.waypointArray.splice(2, inputs.waypointArray.length);
                     console.log("popped. time: " + inputs.time + " points: " + inputs.waypointArray);
                 }
+                this.forceStop = false;
             }
             else {
                 var distance = dist(actualState.centerX, actualState.centerY, point.x, point.y);
@@ -300,12 +308,13 @@ function updateRobotPlan(timeDiff) {
             targetTheta = targetTheta - (dist(inputs.waypointArray[0], inputs.waypointArray[1], actualState.centerX, actualState.centerY) - inputs.radius);
 
             // Stop case
-            if (timeLeft * 1000.0 <= 2 * timeDiff && Math.abs(currInclination - inputs.inclination) < 0.05) {
+            if (this.forceStop == true || timeLeft * 1000.0 <= 2 * timeDiff && Math.abs(currInclination - inputs.inclination) < 0.05) {
                 control.velX = 0.0;
                 control.velY = 0.0;
 
                 // Got more points to take care of
                 if (inputs.waypointArray.length > 2) {
+                    inputs.time = inputs.time.splice(1, inputs.time.length);
                     inputs.waypointArray = inputs.waypointArray.splice(2, inputs.waypointArray.length);
                     actualState.stopwatchTime = (new Date()).getTime();
 
@@ -313,6 +322,7 @@ function updateRobotPlan(timeDiff) {
                     inputs.inclination = inputs.inclination2;
                     inputs.radius = inputs.radius2;
                 }
+                this.forceStop = false;
             }
             else {
                 var angleLeft = (currInclination - inputs.inclination + 2 * Math.PI) % (2 * Math.PI);
@@ -388,6 +398,18 @@ function drawGoalPath()
     }
 }
 
+function errorCheckSpeed(speed)
+{
+    console.log("Required speed: " + speed);
+    if (speed > robotSpecs.maxVelocity)
+    {
+        alert("Necessary velocity of " + speed + " is greater than max of 15.0 ft/s");
+        inputs.option = "none";
+        return false;
+    }
+    return true;
+}
+
 function onSubmitControlOption() {
     var controlElt = document.getElementById("controlOption");
     var controlName = controlElt.value;
@@ -402,11 +424,14 @@ function onSubmitControlOption() {
     inputs.waypointArray = [];
     inputs.time = [];
     inputs.time.push(Number(document.getElementById("time").value));
+    
+    var requiredSpeed = 0.0;
     switch (controlName) {
         case "direct":
             inputs.theta = Number(document.getElementById("direction").value) * Math.PI / 180.0;
             inputs.speed = Number(document.getElementById("speed").value);
             inputs.velRot = Number(document.getElementById("rotation").value) * Math.PI / 180.0;
+            requiredSpeed = inputs.speed;
             console.log("Theta, Speed, VelRot: " + inputs.theta + " " + inputs.speed + " " + inputs.velRot);
             break;
 
@@ -415,6 +440,7 @@ function onSubmitControlOption() {
             control.wheel2 = Number(document.getElementById("wheel2").value);
             control.wheel3 = Number(document.getElementById("wheel3").value);
             control.wheel4 = Number(document.getElementById("wheel4").value);
+            // TODO check requiredSpeed for wheel control
             console.log("Wheel 1-4: " + control.wheel1 + " " + control.wheel2 + " " + control.wheel3 + " " + control.wheel4);
             break;
 
@@ -423,6 +449,10 @@ function onSubmitControlOption() {
 
             // Get waypoints
             inputs.waypointArray = document.getElementById("Waypoints").value.split(",");
+            if (inputs.waypointArray.length == 1)
+            {
+                inputs.waypointArray = [];
+            }
             inputs.waypointArray.push(Number(document.getElementById("PointX").value));
             inputs.waypointArray.push(Number(document.getElementById("PointY").value));
 
@@ -439,13 +469,16 @@ function onSubmitControlOption() {
                 totalDist += dist(inputs.waypointArray[i - 2], inputs.waypointArray[i - 1],
                     inputs.waypointArray[i], inputs.waypointArray[i + 1])
             }
+            console.log(inputs.time);
             for (var i = 0; i < inputs.time.length; i++) {
                 inputs.time[i] /= totalDist;
             }
 
+            requiredSpeed = totalDist / overallTime;
+
             console.log("(theta: waypoints): " + inputs.theta + ": " + inputs.waypointArray);
-            console.log("time" + " " + inputs.time);
-            
+            console.log("times: " + inputs.time);
+
             // Set up goal path for drawing
             goalPath.type = "lines";
             goalPath.pointArray = inputs.waypointArray;
@@ -474,6 +507,8 @@ function onSubmitControlOption() {
             inputs.waypointArray.push(actualState.centerY);
 
             console.log("point and waypoints: " + inputs.pointX + "," + inputs.pointY + " " + inputs.waypointArray);
+            
+            requiredSpeed = (length1 * 2 + length2 * 2) / inputs.time[0];
 
             // Fix time
             var overallTime = inputs.time[0];
@@ -494,6 +529,8 @@ function onSubmitControlOption() {
             inputs.radius = Number(document.getElementById("radius").value);
             inputs.waypointArray.push(actualState.centerX + inputs.radius * Math.cos(inputs.inclination));
             inputs.waypointArray.push(actualState.centerY + inputs.radius * Math.sin(inputs.inclination));
+            
+            requiredSpeed = inputs.radius * 2 * Math.PI / inputs.time[0];
 
             console.log("Circle (X, Y, radius): " + inputs.waypointArray[0] + ", " + inputs.waypointArray[1] + " " + inputs.radius);
             goalPath.radii.push(inputs.radius);
@@ -510,11 +547,18 @@ function onSubmitControlOption() {
             inputs.waypointArray.push(actualState.centerY + inputs.radius * Math.sin(inputs.inclination));
             inputs.waypointArray.push(actualState.centerX + inputs.radius2 * Math.cos(inputs.inclination2));
             inputs.waypointArray.push(actualState.centerY + inputs.radius2 * Math.sin(inputs.inclination2));
+            
+            requiredSpeed = (inputs.radius * 2 * Math.PI + inputs.radius2 * 2 * Math.PI) / inputs.time[0];
 
             goalPath.pointArray = inputs.waypointArray;
             goalPath.radii.push(inputs.radius);
             goalPath.radii.push(inputs.radius2);
             goalPath.type = "circles";
+            
+            var overallTime = inputs.time[0];
+            inputs.time[0] = overallTime * inputs.radius / (inputs.radius + inputs.radius2);
+            inputs.time.push(overallTime * inputs.radius2 / (inputs.radius + inputs.radius2));
+            console.log(inputs.time);
 
             console.log("Circle 1 (X, Y, radius): " + inputs.waypointArray[0] + ", " + inputs.waypointArray[1] + " " + inputs.radius);
             console.log("Circle 2 (X, Y, radius): " + inputs.waypointArray[2] + ", " + inputs.waypointArray[3] + " " + inputs.radius2);
@@ -524,6 +568,11 @@ function onSubmitControlOption() {
             control.option = "";
             console.error("Invalid control option somehow");
             break;
+    }
+    
+    if (!errorCheckSpeed(requiredSpeed))
+    {
+        return;
     }
     goalPath.centerX = actualState.centerX;
     goalPath.centerY = actualState.centerY;

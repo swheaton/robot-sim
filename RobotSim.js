@@ -32,6 +32,7 @@ var robotSpecs = new function() {
     this.wheelRadius = 1;
     this.displayWidth = this.realWidth * page.pixelsPerFt;
     this.displayHeight = this.realHeight * page.pixelsPerFt;
+    this.maxVelocity = 15.0;
 }
 
 var actualState = {
@@ -154,10 +155,18 @@ function drawRobot() {
     document.getElementById("theta").textContent = (actualState.theta / Math.PI * 180.0).toFixed(1);
 }
 
-// TODO don't just clear it, try to move it somehow so it stays.
-function clearDrawnPath() {
+function clearDrawnPath(relocatePosition) {
     var pathCanvas = document.getElementById("actualPathCanvas");
-    pathCanvas.getContext("2d").clearRect(0, 0, pathCanvas.width, pathCanvas.height);
+    var ctx = pathCanvas.getContext("2d");
+    //.clearRect(0, 0, pathCanvas.width, pathCanvas.height);
+    //var imageData = ctx.getImageData(0, 0, page.displayGridWidth, page.displayGridHeight);
+    //pathCanvas.width= pathCanvas.width;
+    //redrawGoalPath();
+    ctx.width = ctx.width;
+    //ctx.putImageData(imageData, relocatePosition.row, relocatePosition.col);
+    var imageData = document.getElementById("hiddenGoalCanvas").getContext("2d").getImageData(0, 0, page.displayGridWidth, page.displayGridHeight);
+    ctx.putImageData(imageData, relocatePosition.row, relocatePosition.col);
+    console.log(relocatePosition);
 }
 
 function updateRobotPosition(timeDiff) {
@@ -172,15 +181,18 @@ function updateRobotPosition(timeDiff) {
     // Move robot back to center if it's about to go off screen.
     if (actualState.centerX <= page.centerX - (page.realGridWidth / 2 - 3) ||
         actualState.centerX >= page.centerX + (page.realGridWidth / 2 - 3)) {
+        clearDrawnPath({row: robotXToCol(-actualState.centerX + page.centerX), 
+                        col: robotYToRow(actualState.centerY - page.centerY)});
+
         page.centerX = actualState.centerX;
         page.centerY = actualState.centerY;
-        clearDrawnPath();
     }
     if (actualState.centerY <= page.centerY - (page.realGridHeight / 2 - 3) ||
         actualState.centerY >= page.centerY + (page.realGridHeight / 2 - 3)) {
         page.centerX = actualState.centerX;
         page.centerY = actualState.centerY;
-        clearDrawnPath();
+        clearDrawnPath({row: robotXToCol(-actualState.centerX + page.centerX), 
+                        col: robotYToRow(actualState.centerY - page.centerY)});
     }
 }
 
@@ -222,6 +234,27 @@ function getPoint() {
             x: Number(inputs.waypointArray[0]),
             y: Number(inputs.waypointArray[1])
         };
+    }
+}
+
+// "Sanitize" velocities by making sure they make sense
+function sanitizeVelocities()
+{
+    var velocity = Math.sqrt(control.velX * control.velX + control.velY * control.velY);
+    // Should never be trying to go more than slightly over max speed
+    if (velocity > robotSpecs.maxVelocity * 1.5)
+    {
+        console.error("Tried to go too fast. Something went wrong. Just stopping because we're most likely done anyways.");
+        control.velX = 0.0;
+        control.velY = 0.0;
+    }
+    // Velocity is slightly over the max, so scale it back to 15.
+    else if (velocity > robotSpecs.maxVelocity)
+    {
+        console.log("Scaling velocity back to 15 ft/s");
+        var ratio = robotSpecs.maxVelocity / velocity;
+        control.velX *= ratio;
+        control.velY *- ratio;
     }
 }
 
@@ -300,6 +333,7 @@ function updateRobotPlan(timeDiff) {
                 if (angleLeft < 0.05 && timeLeft * 1000.0 > 2 * timeDiff) {
                     angleLeft = 2 * Math.PI;
                 }
+
                 control.velX = angleLeft * inputs.radius / timeLeft * Math.cos(targetTheta + (actualState.theta));
                 control.velY = angleLeft * inputs.radius / timeLeft * Math.sin(targetTheta + (actualState.theta));
             }
@@ -310,6 +344,8 @@ function updateRobotPlan(timeDiff) {
             console.error("Invalid control option somehow");
             break;
     }
+    
+    sanitizeVelocities();
 
     // Calculate wheel controls based on goal velocities
     if (calcControls === true) {
@@ -453,12 +489,17 @@ function onSubmitControlOption() {
             inputs.waypointArray.push(actualState.centerX + inputs.radius * Math.cos(inputs.inclination));
             inputs.waypointArray.push(actualState.centerY + inputs.radius * Math.sin(inputs.inclination));
 
-            ctx.beginPath();
-            ctx.save();
-            ctx.strokeStyle = "blue";
-            ctx.arc(robotXToCol(inputs.waypointArray[0]), robotYToRow(inputs.waypointArray[1]), inputs.radius * page.pixelsPerFt, 0, 2 * Math.PI, false);
-            ctx.stroke();
-            ctx.restore();
+            var TEMPCanvas = document.getElementById("hiddenGoalCanvas");
+            TEMPCanvas.width = TEMPCanvas.width;
+            var TEMPCtx = TEMPCanvas.getContext("2d");
+            
+            TEMPCtx.save();
+            TEMPCtx.beginPath();
+            TEMPCtx.strokeStyle = "blue";
+            TEMPCtx.arc(robotXToCol(inputs.waypointArray[0]), robotYToRow(inputs.waypointArray[1]), inputs.radius * page.pixelsPerFt, 0, 2 * Math.PI, false);
+            TEMPCtx.stroke();
+            var imageData = TEMPCtx.getImageData(0, 0, page.displayGridWidth, page.displayGridHeight);
+            ctx.putImageData(imageData, 0, 0);
             console.log("Circle (X, Y, radius): " + inputs.waypointArray[0] + ", " + inputs.waypointArray[1] + " " + inputs.radius);
             break;
 

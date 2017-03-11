@@ -392,6 +392,7 @@ function onSubmitControlOption() {
 
             // Draw line to point
             ctx.save();
+            ctx.beginPath();
             ctx.strokeStyle = "blue";
             ctx.moveTo(robotXToCol(actualState.centerX), robotYToRow(actualState.centerY));
             for (var i = 0; i < inputs.waypointArray.length; i += 2) {
@@ -435,6 +436,7 @@ function onSubmitControlOption() {
 
             // Draw rect
             ctx.save();
+            ctx.beginPath();
             ctx.strokeStyle = "blue";
             ctx.moveTo(robotXToCol(actualState.centerX), robotYToRow(actualState.centerY));
             for (var i = 0; i < inputs.waypointArray.length; i += 2) {
@@ -451,6 +453,7 @@ function onSubmitControlOption() {
             inputs.waypointArray.push(actualState.centerX + inputs.radius * Math.cos(inputs.inclination));
             inputs.waypointArray.push(actualState.centerY + inputs.radius * Math.sin(inputs.inclination));
 
+            ctx.beginPath();
             ctx.save();
             ctx.strokeStyle = "blue";
             ctx.arc(robotXToCol(inputs.waypointArray[0]), robotYToRow(inputs.waypointArray[1]), inputs.radius * page.pixelsPerFt, 0, 2 * Math.PI, false);
@@ -470,11 +473,13 @@ function onSubmitControlOption() {
             inputs.waypointArray.push(actualState.centerY + inputs.radius2 * Math.sin(inputs.inclination2));
 
             ctx.save();
+            ctx.beginPath();
             ctx.strokeStyle = "blue";
             ctx.arc(robotXToCol(inputs.waypointArray[0]), robotYToRow(inputs.waypointArray[1]), inputs.radius * page.pixelsPerFt, 0, 2 * Math.PI, false);
             ctx.stroke();
             console.log("Circle 1 (X, Y, radius): " + inputs.waypointArray[0] + ", " + inputs.waypointArray[1] + " " + inputs.radius);
 
+            ctx.beginPath();
             ctx.strokeStyle = "blue";
             ctx.arc(robotXToCol(inputs.waypointArray[2]), robotYToRow(inputs.waypointArray[3]), inputs.radius2 * page.pixelsPerFt, 0, 2 * Math.PI, false);
             ctx.stroke();

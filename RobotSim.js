@@ -123,10 +123,12 @@ function drawRobot() {
     ctx.translate(centerCol, centerRow);
     ctx.rotate(actualState.theta);
     ctx.fillStyle = "black";
+    ctx.globalAlpha = 0.5;
     ctx.fillRect(-robotSpecs.displayWidth / 2, -robotSpecs.displayHeight / 2,
         robotSpecs.displayWidth, robotSpecs.displayHeight);
 
     // Forward heading marker
+    ctx.globalAlpha=1.0;
     ctx.fillStyle = "white";
     ctx.fillRect(-robotSpecs.displayWidth / 20, -robotSpecs.displayHeight / 2 + 5,
         robotSpecs.displayWidth / 10, robotSpecs.displayHeight / 10);
@@ -469,7 +471,6 @@ function onSubmitControlOption() {
                 totalDist += dist(inputs.waypointArray[i - 2], inputs.waypointArray[i - 1],
                     inputs.waypointArray[i], inputs.waypointArray[i + 1])
             }
-            console.log(inputs.time);
             for (var i = 0; i < inputs.time.length; i++) {
                 inputs.time[i] /= totalDist;
             }

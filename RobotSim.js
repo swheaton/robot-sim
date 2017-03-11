@@ -360,14 +360,14 @@ function onSubmitControlOption()
 
     // Clear goal path canvas
     var goalCanvas = document.getElementById("goalPathCanvas");
+    goalCanvas.width = goalCanvas.width;
     var ctx = goalCanvas.getContext("2d");
-    ctx.clearRect(0, 0, goalCanvas.width, goalCanvas.height);
-    console.log("clearing: " + goalCanvas.width + " " + goalCanvas.height);
 
     // Also clear actual path canvas too
     var pathCanvas = document.getElementById("actualPathCanvas");
-    var pathCtx = pathCanvas.getContext("2d");
-    pathCtx.clearRect(0, 0, pathCanvas.width, pathCanvas.height);
+    pathCanvas.width = pathCanvas.width;
+    //var pathCtx = pathCanvas.getContext("2d");
+    //pathCtx.clearRect(0, 0, pathCanvas.width, pathCanvas.height);
 
 	inputs.waypointArray = [];
     inputs.time = [];

@@ -23,6 +23,9 @@ var page = new function() {
     // Center of the grid corresponds to these coordinates in feet
     this.centerX = 0;
     this.centerY = 0;
+    
+    this.mouseCenterX = 0;
+    this.mouseCenterY = 0;
 }
 
 // Units of feet
@@ -68,6 +71,7 @@ var control = {
 var inputs = {
     // Input option - default to "direct" with 0 movement
     option: "none",
+    manualMode: false,
     // Desired heading/speeds
     theta: 0,
     speed: 0,
@@ -337,6 +341,10 @@ function updateRobotPlan(timeDiff) {
             }
             control.velRot = 0.0;
             break;
+            
+        case "manual":
+            inputs.manualMode = true;
+            break;
 
         default:
             console.error("Invalid control option somehow");
@@ -426,6 +434,8 @@ function onSubmitControlOption() {
     inputs.waypointArray = [];
     inputs.time = [];
     inputs.time.push(Number(document.getElementById("time").value));
+    
+    inputs.manualMode = false;
     
     var requiredSpeed = 0.0;
     switch (controlName) {
@@ -564,10 +574,17 @@ function onSubmitControlOption() {
             console.log("Circle 1 (X, Y, radius): " + inputs.waypointArray[0] + ", " + inputs.waypointArray[1] + " " + inputs.radius);
             console.log("Circle 2 (X, Y, radius): " + inputs.waypointArray[2] + ", " + inputs.waypointArray[3] + " " + inputs.radius2);
             break;
+            
+        case "manual":
+            console.log("Manual control");
+            inputs.centerX = actualState.centerX;
+            inputs.centerY = actualState.centerY;
+            inputs.theta = 0.0;
+            break;
 
         default:
             control.option = "";
-            console.error("Invalid control option somehow");
+            console.error("Invalid control option (" + controlName + ") somehow");
             break;
     }
     
@@ -625,5 +642,64 @@ function onClick()
     }
 }
 
-document.getElementById("robotCanvas").addEventListener('click', onClick, false
-);
+function onMouseover(event)
+{
+    if (inputs.manualMode)
+    {
+        page.mouseCenterX = event.clientX;
+        page.mouseCenterY = event.clientY;
+    }
+}
+
+function onMousemove(event)
+{
+    if (inputs.manualMode)
+    {
+        if (page.mouseDown)
+        {
+            var diffX = (event.clientX - page.mouseCenterX) / page.pixelsPerFt;
+            var diffY = (page.mouseCenterY - event.clientY) / page.pixelsPerFt;
+            inputs.theta = Math.atan2(diffY, diffX);
+            inputs.velRot = 0.0;
+            inputs.speed = Math.sqrt(diffX * diffX + diffY * diffY);
+            inputs.option = "direct";
+        }
+        else
+        {
+            onMousemove.count = ++onMousemove.count || 1;
+            if (onMousemove.count % 3 == 0)
+            {
+                var diffX = (event.clientX - page.mouseCenterX) / page.pixelsPerFt * 10.0;
+                var diffY = (event.clientY - page.mouseCenterY) / page.pixelsPerFt * 10.0;
+                inputs.waypointArray = [];
+                inputs.waypointArray.push(actualState.centerX + diffX);
+                inputs.theta = actualState.theta;
+                inputs.waypointArray.push(actualState.centerY - diffY); // y is inverted
+                inputs.time = [];
+                inputs.time.push(0.1);
+                actualState.stopwatchTime = (new Date()).getTime();
+                inputs.option = "point";
+                page.mouseCenterX = event.clientX;
+                page.mouseCenterY = event.clientY;
+            }
+        }
+    }
+}
+
+function onMousedown()
+{
+    page.mouseDown = true;
+    page.mouseCenterX = event.clientX;
+    page.mouseCenterY = event.clientY;
+}
+
+function onMouseup()
+{
+    page.mouseDown = false;
+}
+
+document.getElementById("robotCanvas").addEventListener('click', onClick, false);
+document.getElementById("robotCanvas").addEventListener('mouseover', onMouseover, false);
+document.getElementById("robotCanvas").addEventListener('mousemove', onMousemove, false);
+document.getElementById("robotCanvas").addEventListener('mousedown', onMousedown, false);
+document.getElementById("robotCanvas").addEventListener('mouseup', onMouseup, false);

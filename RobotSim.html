@@ -8,7 +8,7 @@
 </head>
 
 <!-- 40 px is one foot -->
-<body>
+<body id="theBody">
 	<canvas id="gridCanvas" width="900" height="450" 
 		style="position: absolute; border:1px solid #000000; z-index: 0">
 	</canvas>
@@ -37,12 +37,14 @@
 
 	<div style="float:right;">
 		<select id="controlOption" value="point">
-			<option value="eight">Figure Eight</option>
+						<option value="manual">Manual Control</option>
+
 			<option value="direct">Specify Direction, Speed, Rotation</option>
 			<option value="wheelControl">Specify Wheel Controls</option>
 			<option value="point">Specify Point</option>
 			<option value="circle">Circular Path</option>
 			<option value="rect">Rectangular Path</option>
+			<option value="eight">Figure Eight</option>
 		</select>
 		<div id="options_direct">
 			<input type="number" id="direction">Theta (deg)</text> </br>
@@ -66,6 +68,6 @@
 		<button type="button" onclick="onSubmitControlOption();">Submit Control Change</button>
 	</div>
 
-	<script type="text/javascript" src="RobotSim.js?version=7"></script>
+	<script type="text/javascript" src="RobotSim.js?version=8"></script>
 </body>
 </html>

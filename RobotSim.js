@@ -615,3 +615,14 @@ setTimeout(function() {
     var startTime = (new Date()).getTime();
     animate(document.getElementById("robotCanvas"), startTime);
 }, 1000);
+
+function onClick()
+{
+    if (inputs.option == "direct" || inputs.option == "wheelControl")
+    {
+        inputs.option = "none";
+    }
+}
+
+document.getElementById("robotCanvas").addEventListener('click', onClick, false
+);

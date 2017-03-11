@@ -150,18 +150,12 @@ function drawRobot() {
     document.getElementById("theta").textContent = (actualState.theta / Math.PI * 180.0).toFixed(1);
 }
 
-function clearDrawnPath(relocatePosition) {
+function clearDrawnPath() {
     var pathCanvas = document.getElementById("actualPathCanvas");
-    var ctx = pathCanvas.getContext("2d");
-    //.clearRect(0, 0, pathCanvas.width, pathCanvas.height);
-    //var imageData = ctx.getImageData(0, 0, page.displayGridWidth, page.displayGridHeight);
-    //pathCanvas.width= pathCanvas.width;
-    //redrawGoalPath();
-    //ctx.width = ctx.width;
-    //ctx.putImageData(imageData, relocatePosition.row, relocatePosition.col);
-    //var imageData = document.getElementById("hiddenGoalCanvas").getContext("2d").getImageData(0, 0, page.displayGridWidth, page.displayGridHeight);
-    //ctx.putImageData(imageData, relocatePosition.row, relocatePosition.col);
-    //console.log(relocatePosition);
+    pathCanvas.width = pathCanvas.width;
+    drawGoalPath();
+    console.log("Relocating frame and redrawing goal path. Also clearing actual path");
+    // TODO figure out how to just add to actual path instead of clearing
 }
 
 function updateRobotPosition(timeDiff) {
@@ -176,18 +170,15 @@ function updateRobotPosition(timeDiff) {
     // Move robot back to center if it's about to go off screen.
     if (actualState.centerX <= page.centerX - (page.realGridWidth / 2 - 3) ||
         actualState.centerX >= page.centerX + (page.realGridWidth / 2 - 3)) {
-        clearDrawnPath({row: robotXToCol(-actualState.centerX + page.centerX), 
-                        col: robotYToRow(actualState.centerY - page.centerY)});
-
         page.centerX = actualState.centerX;
         page.centerY = actualState.centerY;
+        clearDrawnPath();
     }
     if (actualState.centerY <= page.centerY - (page.realGridHeight / 2 - 3) ||
         actualState.centerY >= page.centerY + (page.realGridHeight / 2 - 3)) {
         page.centerX = actualState.centerX;
         page.centerY = actualState.centerY;
-        clearDrawnPath({row: robotXToCol(-actualState.centerX + page.centerX), 
-                        col: robotYToRow(actualState.centerY - page.centerY)});
+        clearDrawnPath();
     }
 }
 

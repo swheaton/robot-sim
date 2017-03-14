@@ -464,6 +464,7 @@ function onSubmitControlOption() {
     inputs.time.push(Number(document.getElementById("time").value));
     
     inputs.manualMode = false;
+    goalPath.type = "none";
     
     var requiredSpeed = 0.0;
     switch (controlName) {

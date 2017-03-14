@@ -35,8 +35,13 @@ var robotSpecs = new function() {
     this.realWidth = 2;
     this.realHeight = 4;
     
-    // Wheel radius chosen was 1. The full height of the robot is 4
-    this.wheelRadius = 0.25;
+    // Wheel radius chosen was 1. The full length of the robot is 4, so the maximum
+    //  radius would be 2 (since the length is from axle to axle, so twice the radius
+    //  can fit as the length). 2 would clearly be oversized wheels and not realistic.
+    //  But we want the wheels to be as big as possible so that lower rotations of the
+    //  wheel are required to hit a given velocity. So I chose half that, or a radius of
+    //  1 foot. This also makes calculations nice.
+    this.wheelRadius = 1.0;
     
     // Display width and height, in pixels
     this.displayWidth = this.realWidth * page.pixelsPerFt;
@@ -54,7 +59,8 @@ var actualState = {
     lastCenterX: 0,
     lastCenterY: 0,
     
-    // Angle from robot's frame of reference X axis to global frame of reference X axis, radians
+    // Angle from robot's frame of reference X axis to global frame of reference X axis, radians.
+    //  Increasing angle means a clockwise rotation
     theta: 0,
     
     // Velocity in robot frame of reference, ft/sec

@@ -24,66 +24,87 @@ var page = new function() {
     this.centerX = 0;
     this.centerY = 0;
     
+    // Location of last mouse position on the canvas, pixels
     this.mouseCenterX = 0;
     this.mouseCenterY = 0;
 }
 
-// Units of feet
+// Specifications of the robot
 var robotSpecs = new function() {
+    // Units of feet
     this.realWidth = 2;
     this.realHeight = 4;
     this.wheelRadius = 1;
+    
+    // Display width and height, in pixels
     this.displayWidth = this.realWidth * page.pixelsPerFt;
     this.displayHeight = this.realHeight * page.pixelsPerFt;
+    
+    // Max velocity of the robot, in ft/s
     this.maxVelocity = 15.0;
 }
 
+// Actual state of the robot
 var actualState = {
-    // Units of feet
+    // Position of robot, in feet
     centerX: 0,
     centerY: 0,
     lastCenterX: 0,
     lastCenterY: 0,
-    // Radians
+    
+    // Angle from robot's frame of reference X axis to global frame of reference X axis, radians
     theta: 0,
-    // Ft/sec
+    
+    // Velocity in robot frame of reference, ft/sec
     velX: 0,
     velY: 0,
-    // Radians/sec
+    
+    // Rotation rate, radians/sec
     velRot: 0,
+    
+    // A period in time, used to judge real time against
     stopwatchTime: 0,
+    
+    // A global to force robot to stop in some situations
     forceStop: false
 }
 
+// Control variables
 var control = {
-    // Angular rotation rate of wheel, positive means going forward
-    wheel1: 0,
-    wheel2: 0,
-    wheel3: 0,
-    wheel4: 0,
+    // Angular rotation rate of Mecanum wheels, positive means going forward, rev / s
+    wheel1: 0, // front left
+    wheel2: 0, // front right
+    wheel3: 0, // back left
+    wheel4: 0, // back right
 
-    // Intended velocities
+    // Intended velocities, ft/s and rad/s
     velX: 0,
     velY: 0,
     velRot: 0
 }
 
+// Inputs from the user interface
 var inputs = {
-    // Input option - default to "direct" with 0 movement
+    // Input option - default to "none"
     option: "none",
     manualMode: false,
-    // Desired heading/speeds
+
+    // Desired inputs
     theta: 0,
     speed: 0,
     velRot: 0,
     pointX: 0,
     pointY: 0,
-    waypointArray: [],
+    waypointArray: [], // [x1, y1, x2, y2... xn, yn]
     radius: 0,
+    radius2: 0,
     inclination: 0,
-    time: [0.0]
+    inclination2: 0,
+    time: [0.0] // array of times required for each segment of travel
 }
 
+// Structure storing some draw information for the original goal path, so that
+//  we can redraw it easily if we have to (viewing window gets reset).
 var goalPath = {
     pointArray: [],
     radii: [],
@@ -92,6 +113,7 @@ var goalPath = {
     centerY: 0.0
 }
 
+// List of possible input fields from the .html
 var inputFields = [
     "direction_input",
     "speed_input",
@@ -112,6 +134,8 @@ var inputFields = [
 	"length2_input"
 ]
 
+// Needed inputs fields that should be visible for each input option type.
+//  All others will be hidden.
 var neededInputFields = {
     none: [],
     direct: ["direction_input", "speed_input", "rotation_input"],
@@ -123,31 +147,37 @@ var neededInputFields = {
     manual: []
 }
 
+// Draw the background grid with 1/2 foot grid lines. Grid canvas is in the background
 function drawGrid() {
+    // Draw horizontal
     var context = document.getElementById("gridCanvas").getContext("2d");
     for (var x = 0; x <= page.displayGridWidth; x += page.pixelsPerFt / 2) {
         context.moveTo(0.5 + x, 0);
         context.lineTo(0.5 + x, page.displayGridHeight);
     }
 
+    // Draw vertical
     for (var x = 0; x <= page.displayGridHeight; x += page.pixelsPerFt / 2) {
         context.moveTo(0, 0.5 + x);
         context.lineTo(page.displayGridWidth, 0.5 + x);
     }
 
+    // Black, but opaque
     context.strokeStyle = 'rgba(0, 0, 0, 0.2)';
     context.stroke();
 }
 
+// Convert environment x position to column in the display
 function robotXToCol(x) {
     return (x - page.centerX + page.realGridWidth / 2) * page.pixelsPerFt;
 }
 
+// Convert environment y position to row in the display
 function robotYToRow(y) {
     return (page.centerY - y + page.realGridHeight / 2) * page.pixelsPerFt;
 }
 
-// Draws robot given its 
+// Draws robot given its position and theta
 function drawRobot() {
     var ctx = document.getElementById("robotCanvas").getContext("2d");
     ctx.save();
@@ -158,7 +188,7 @@ function drawRobot() {
     ctx.translate(centerCol, centerRow);
     ctx.rotate(actualState.theta);
     ctx.fillStyle = "black";
-    ctx.globalAlpha = 0.5;
+    ctx.globalAlpha = 0.5; // Make somewhat opaque to see grid lines and path behind it
     ctx.fillRect(-robotSpecs.displayWidth / 2, -robotSpecs.displayHeight / 2,
         robotSpecs.displayWidth, robotSpecs.displayHeight);
 
@@ -175,19 +205,20 @@ function drawRobot() {
     ctx.fill();
     ctx.restore();
 
-    // Draw path robot took
+    // Draw path robot took from last position to here
     var pathCtx = document.getElementById("actualPathCanvas").getContext("2d");
     pathCtx.strokeStyle = "red";
     pathCtx.moveTo(robotXToCol(actualState.lastCenterX), robotYToRow(actualState.lastCenterY));
     pathCtx.lineTo(robotXToCol(actualState.centerX), robotYToRow(actualState.centerY));
     pathCtx.stroke();
 
-    // Update numerical outputs
+    // Update numerical outputs on the display
     document.getElementById("xPos").textContent = actualState.centerX.toFixed(2);
     document.getElementById("yPos").textContent = actualState.centerY.toFixed(2);
     document.getElementById("theta").textContent = (actualState.theta / Math.PI * 180.0).toFixed(1);
 }
 
+// Clears actual path taken and redraws goal path too.
 function clearDrawnPath() {
     var pathCanvas = document.getElementById("actualPathCanvas");
     pathCanvas.width = pathCanvas.width;
@@ -196,18 +227,24 @@ function clearDrawnPath() {
     // TODO figure out how to just add to actual path instead of clearing
 }
 
+// Kinematic equations for updating robot position given its current velocities and state.
+//  timeDiff is time to be used for current frame, in milliseconds
 function updateRobotPosition(timeDiff) {
+    // Store away current position
     actualState.lastCenterX = actualState.centerX;
     actualState.lastCenterY = actualState.centerY;
+    
+    // Update x, y, and theta due to current velocities.
     actualState.centerX = actualState.centerX + (timeDiff / 1000.0) *
         (actualState.velX * Math.cos(actualState.theta) + actualState.velY * Math.sin(actualState.theta));
     actualState.centerY = actualState.centerY + (timeDiff / 1000.0) *
         (actualState.velX * Math.sin(-actualState.theta) + actualState.velY * Math.cos(actualState.theta));
     actualState.theta = (actualState.theta - actualState.velRot * (timeDiff / 1000.0) + 2 * Math.PI) % (Math.PI * 2);
 
-    // Move robot back to center if it's about to go off screen.
+    // Move robot back to center if it's about to go within 3 feet of border.
     if (actualState.centerX <= page.centerX - (page.realGridWidth / 2 - 3) ||
         actualState.centerX >= page.centerX + (page.realGridWidth / 2 - 3)) {
+        // Recenter the page and clear the path
         page.centerX = actualState.centerX;
         page.centerY = actualState.centerY;
         clearDrawnPath();
@@ -220,7 +257,7 @@ function updateRobotPosition(timeDiff) {
     }
 }
 
-// Update robot state given control signals and last state
+// Kinematic equations to update robot state given control signals and last state
 function updateRobotState(timeDiff) {
     actualState.velX = (robotSpecs.wheelRadius / 4) *
         (control.wheel1 - control.wheel2 - control.wheel3 + control.wheel4);
@@ -230,9 +267,11 @@ function updateRobotState(timeDiff) {
         (4 * (robotSpecs.realWidth / 2 + robotSpecs.realHeight / 2)) *
         (-control.wheel1 + control.wheel2 - control.wheel3 + control.wheel4);
 
+    // Update velocities for output display
     document.getElementById("velX").textContent = actualState.velX.toFixed(2);
     document.getElementById("velY").textContent = actualState.velY.toFixed(2);
 
+    // Now use physics to update the actual position of the robot
     updateRobotPosition(timeDiff);
 }
 
@@ -242,10 +281,12 @@ function getTimeLeft(timeDiff) {
     return Math.max(timeDiff / 1000.0, inputs.time[0] - ((new Date()).getTime() - actualState.stopwatchTime) / 1000.0);
 }
 
+// Euclidean distance between two points
 function dist(x1, y1, x2, y2) {
     return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
 }
 
+// Get point to be used, but ensure that no invalid positions are ever used.
 function getPoint() {
     if (inputs.waypointArray.length < 2) {
         return {
@@ -283,71 +324,83 @@ function sanitizeVelocities()
     }
 }
 
+// The "brain" - sets intended velocities given the current goal
 function updateRobotPlan(timeDiff) {
     // Set velocities based on control option and parameters
     var calcControls = true;
     var timeLeft = getTimeLeft(timeDiff);
     switch (inputs.option) {
+        // Don't move
         case "none":
             control.velX = 0.0;
             control.velY = 0.0;
             control.velRot = 0.0;
             break;
+        // Move in a certain direction with rotation
         case "direct":
-            control.velX = inputs.speed * Math.cos(inputs.theta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/ ));
-            control.velY = inputs.speed * Math.sin(inputs.theta + (actualState.theta /*+ inputs.velRot * (timeDiff / 1000.0)*/ ));
+            control.velX = inputs.speed * Math.cos(inputs.theta + actualState.theta);
+            control.velY = inputs.speed * Math.sin(inputs.theta + actualState.theta);
             control.velRot = inputs.velRot;
             break;
 
+        // Directly input wheel controls ... don't calculate anything
         case "wheelControl":
             calcControls = false;
             break;
 
+        // For point and rectangle mode, just travel to the waypoints given
         case "point":
         case "rect":
             var point = getPoint();
+            // Stop if forced to or we're really close to the point
             if (this.forceStop == true || Math.abs(point.y - actualState.centerY) < 0.005 && Math.abs(point.x - actualState.centerX) < 0.005) {
                 control.velX = 0.0;
                 control.velY = 0.0;
-                //console.log(0);
                 if (inputs.waypointArray.length > 2) {
-                    // We've completed a waypoint
+                    // We've completed a waypoint. Pop this point and reset stopwatch
                     inputs.time = inputs.time.splice(1, inputs.time.length);
                     actualState.stopwatchTime = (new Date()).getTime();
                     inputs.waypointArray = inputs.waypointArray.splice(2, inputs.waypointArray.length);
                 }
                 this.forceStop = false;
             }
+            // Keep traveling towards the waypoint
             else {
                 var distance = dist(actualState.centerX, actualState.centerY, point.x, point.y);
                 var targetTheta = Math.atan2(point.y - actualState.centerY, point.x - actualState.centerX);
-                control.velX = distance / timeLeft * Math.cos(targetTheta + (actualState.theta));
-                control.velY = distance / timeLeft * Math.sin(targetTheta + (actualState.theta));
+                control.velX = distance / timeLeft * Math.cos(targetTheta + actualState.theta);
+                control.velY = distance / timeLeft * Math.sin(targetTheta + actualState.theta);
             }
+            // Close to goal theta?
             if (Math.abs(inputs.theta - actualState.theta) < 0.005) {
                 control.velRot = 0.0;
             }
+            // Rotate until we reach goal theta
             else {
                 control.velRot = -(inputs.theta - actualState.theta) / timeLeft;
             }
             break;
 
+        // Travel along circular paths
         case "eight":
         case "circle":
+            // Angle of robot from center of circle
             var currInclination = (Math.atan2(inputs.waypointArray[1] - actualState.centerY, inputs.waypointArray[0] - actualState.centerX) +
                 2 * Math.PI) % (2 * Math.PI);
             var targetTheta = currInclination + Math.PI / 2;
 
-            // Error correction
+            // Error correction to try and get the path to conform to a circle
             targetTheta = targetTheta - (dist(inputs.waypointArray[0], inputs.waypointArray[1], actualState.centerX, actualState.centerY) - inputs.radius);
 
-            // Stop case
-            if (this.forceStop == true || timeLeft * 1000.0 <= 2 * timeDiff && Math.abs(currInclination - inputs.inclination) < 0.05) {
+            // Stop case - we've made a full circle. Check timeLeft to make sure we didn't just start
+            if (this.forceStop == true || timeLeft * 1000.0 <= 2 * timeDiff &&
+                    Math.abs(currInclination - inputs.inclination) < 0.05) {
                 control.velX = 0.0;
                 control.velY = 0.0;
 
                 // Got more points to take care of
                 if (inputs.waypointArray.length > 2) {
+                    // Pop off the point and reset stopwatch
                     inputs.time = inputs.time.splice(1, inputs.time.length);
                     inputs.waypointArray = inputs.waypointArray.splice(2, inputs.waypointArray.length);
                     actualState.stopwatchTime = (new Date()).getTime();
@@ -359,13 +412,16 @@ function updateRobotPlan(timeDiff) {
                 this.forceStop = false;
             }
             else {
+                // Travel along what we think is the tangent to the intended circle
                 var angleLeft = (currInclination - inputs.inclination + 2 * Math.PI) % (2 * Math.PI);
+                
+                // Make a "0" angle be "2*PI" because it's easier
                 if (angleLeft < 0.05 && timeLeft * 1000.0 > 2 * timeDiff) {
                     angleLeft = 2 * Math.PI;
                 }
 
-                control.velX = angleLeft * inputs.radius / timeLeft * Math.cos(targetTheta + (actualState.theta));
-                control.velY = angleLeft * inputs.radius / timeLeft * Math.sin(targetTheta + (actualState.theta));
+                control.velX = angleLeft * inputs.radius / timeLeft * Math.cos(targetTheta + actualState.theta);
+                control.velY = angleLeft * inputs.radius / timeLeft * Math.sin(targetTheta + actualState.theta);
             }
             control.velRot = 0.0;
             break;
@@ -378,10 +434,10 @@ function updateRobotPlan(timeDiff) {
             console.error("Invalid control option somehow");
             break;
     }
-    
+
     sanitizeVelocities();
 
-    // Calculate wheel controls based on goal velocities
+    // Calculate wheel controls based on goal velocities - inverse kinematic equations
     if (calcControls === true) {
         control.wheel1 = (control.velY + control.velX - 3 * control.velRot) / robotSpecs.wheelRadius;
         control.wheel2 = (control.velY - control.velX + 3 * control.velRot) / robotSpecs.wheelRadius;
@@ -389,12 +445,14 @@ function updateRobotPlan(timeDiff) {
         control.wheel4 = (control.velY + control.velX + 3 * control.velRot) / robotSpecs.wheelRadius;
     }
 
+    // Update wheel control output on display
     document.getElementById("w1").textContent = control.wheel1.toFixed(2);
     document.getElementById("w2").textContent = control.wheel2.toFixed(2);
     document.getElementById("w3").textContent = control.wheel3.toFixed(2);
     document.getElementById("w4").textContent = control.wheel4.toFixed(2);
 }
 
+// Draw goal path in blue
 function drawGoalPath()
 {
     // Clear goal path canvas
@@ -402,9 +460,9 @@ function drawGoalPath()
     goalCanvas.width = goalCanvas.width;
     var ctx = goalCanvas.getContext("2d");
 
-    // Line path
     switch (goalPath.type)
     {
+        // Draw a series of lines - either point execution or rectangle
         case "lines":
             // Draw line to point
             ctx.save();
@@ -417,6 +475,8 @@ function drawGoalPath()
             ctx.stroke();
             ctx.restore();
             break;
+
+        // Draw a series of circles
         case "circles":
             ctx.save();
             ctx.strokeStyle = "blue";
@@ -436,6 +496,7 @@ function drawGoalPath()
     }
 }
 
+// Check if speed is greater than max velocity allowed
 function errorCheckSpeed(speed)
 {
     console.log("Required speed: " + speed);
@@ -448,17 +509,22 @@ function errorCheckSpeed(speed)
     return true;
 }
 
+// Called when "Submit Control Change" button is pressed.
 function onSubmitControlOption() {
+    // Get and set control option
     var controlElt = document.getElementById("controlOption");
     var controlName = controlElt.value;
     console.log("Changing control mode: " + controlName);
     inputs.option = controlName;
+    
+    // Reset stopwatch to now
     actualState.stopwatchTime = (new Date()).getTime();
 
     // Also clear actual path canvas too
     var pathCanvas = document.getElementById("actualPathCanvas");
     pathCanvas.width = pathCanvas.width;
 
+    // Clear some input stuff
     inputs.waypointArray = [];
     inputs.time = [];
     inputs.time.push(Number(document.getElementById("time").value));
@@ -468,6 +534,7 @@ function onSubmitControlOption() {
     
     var requiredSpeed = 0.0;
     switch (controlName) {
+        // Direct mode: get direction, speed, rotation
         case "direct":
             inputs.theta = Number(document.getElementById("direction").value) * Math.PI / 180.0;
             inputs.speed = Number(document.getElementById("speed").value);
@@ -477,6 +544,7 @@ function onSubmitControlOption() {
             break;
 
         case "wheelControl":
+            // WHeel control: get all 4 wheels
             control.wheel1 = Number(document.getElementById("wheel1").value);
             control.wheel2 = Number(document.getElementById("wheel2").value);
             control.wheel3 = Number(document.getElementById("wheel3").value);
@@ -488,7 +556,7 @@ function onSubmitControlOption() {
         case "point":
             inputs.theta = Number(document.getElementById("direction").value) * Math.PI / 180.0;
 
-            // Get waypoints
+            // Get waypoints, then add final point
             inputs.waypointArray = document.getElementById("Waypoints").value.split(",");
             if (inputs.waypointArray.length == 1)
             {
@@ -500,16 +568,23 @@ function onSubmitControlOption() {
             // Break up path into time chunks based on distance
             var overallTime = inputs.time[0];
             inputs.time = [];
+            
+            // Current to first point
             inputs.time.push(overallTime * dist(actualState.centerX, actualState.centerY,
                 inputs.waypointArray[0], inputs.waypointArray[1]));
             var totalDist = dist(actualState.centerX, actualState.centerY,
                 inputs.waypointArray[0], inputs.waypointArray[1]);
+            
+            // To all subsequent points - time should be the comparative length
+            //  of this segment over the whole distance, times the time we are allowed
             for (var i = 2; i < inputs.waypointArray.length; i += 2) {
                 inputs.time.push(overallTime * dist(inputs.waypointArray[i - 2], inputs.waypointArray[i - 1],
                     inputs.waypointArray[i], inputs.waypointArray[i + 1]));
                 totalDist += dist(inputs.waypointArray[i - 2], inputs.waypointArray[i - 1],
                     inputs.waypointArray[i], inputs.waypointArray[i + 1])
             }
+            
+            // Scale times based on distance
             for (var i = 0; i < inputs.time.length; i++) {
                 inputs.time[i] /= totalDist;
             }
@@ -526,12 +601,13 @@ function onSubmitControlOption() {
             break;
 
         case "rect":
+            // Get lengths and inclinations of opposite corners of the rectangle from current pos
             var length1 = Number(document.getElementById("length1").value);
             var length2 = Number(document.getElementById("length2").value);
             inputs.inclination = Number(Math.PI / 180.0 * document.getElementById("inclination").value);
             inputs.inclination = (inputs.inclination + Math.PI * 2) % (Math.PI * 2);
 
-            // Add waypoints as corners of rect
+            // Add waypoints as corners of rectangle
             var theAngle = Math.atan(length2 / length1);
             console.log(theAngle);
             var hypotenuse = Math.sqrt(length1 * length1 + length2 * length2);
@@ -550,7 +626,7 @@ function onSubmitControlOption() {
             
             requiredSpeed = (length1 * 2 + length2 * 2) / inputs.time[0];
 
-            // Fix time
+            // Add times for each segment, scaled by side length
             var overallTime = inputs.time[0];
             inputs.time[0] = overallTime * (length1 / (length1 + length2) / 2);
             inputs.time.push(overallTime * (length2 / (length1 + length2) / 2));
@@ -565,6 +641,8 @@ function onSubmitControlOption() {
             break;
 
         case "circle":
+            // Inclination of robot to center of circle, and radius. Store center point
+            //  of circle for our own purposes
             inputs.inclination = Number(Math.PI / 180.0 * document.getElementById("inclination").value);
             inputs.radius = Number(document.getElementById("radius").value);
             inputs.waypointArray.push(actualState.centerX + inputs.radius * Math.cos(inputs.inclination));
@@ -573,6 +651,8 @@ function onSubmitControlOption() {
             requiredSpeed = inputs.radius * 2 * Math.PI / inputs.time[0];
 
             console.log("Circle (X, Y, radius): " + inputs.waypointArray[0] + ", " + inputs.waypointArray[1] + " " + inputs.radius);
+            
+            // Set up goal path drawing stuff
             goalPath.radii = [];
             goalPath.radii.push(inputs.radius);
             goalPath.pointArray = inputs.waypointArray.slice();
@@ -580,6 +660,8 @@ function onSubmitControlOption() {
             break;
 
         case "eight":
+            // Inclinations of robot to centers of circles, and radii. Store center points
+            //  of circles for our own purposes
             inputs.inclination = Number(Math.PI / 180.0 * document.getElementById("inclination").value);
             inputs.inclination2 = Number(Math.PI / 180.0 * document.getElementById("inclination2").value);
             inputs.radius = Number(document.getElementById("radius").value);
@@ -597,6 +679,7 @@ function onSubmitControlOption() {
             goalPath.radii.push(inputs.radius2);
             goalPath.type = "circles";
             
+            // Scale time segments based on comparative circumferences
             var overallTime = inputs.time[0];
             inputs.time[0] = overallTime * inputs.radius / (inputs.radius + inputs.radius2);
             inputs.time.push(overallTime * inputs.radius2 / (inputs.radius + inputs.radius2));
@@ -607,6 +690,7 @@ function onSubmitControlOption() {
             break;
             
         case "manual":
+            // Manual input - nothing special
             console.log("Manual control");
             inputs.centerX = actualState.centerX;
             inputs.centerY = actualState.centerY;
@@ -622,10 +706,13 @@ function onSubmitControlOption() {
             break;
     }
     
+    // Error check speed - alerts failure to the user
     if (!errorCheckSpeed(requiredSpeed))
     {
         return;
     }
+    
+    // Draw goal path
     goalPath.centerX = actualState.centerX;
     goalPath.centerY = actualState.centerY;
     drawGoalPath();
@@ -634,25 +721,29 @@ function onSubmitControlOption() {
     inputs.theta = (inputs.theta + 2 * Math.PI) % (2 * Math.PI);
 }
 
+// Called continuously whenever a new frame can be drawn. Updates
+//  all the things!
 function updateCanvas(canvas, timeDiff) {
     // Clear the canvas before drawing
     var context = canvas.getContext("2d");
     context.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Update everything
     updateRobotPlan(timeDiff);
     updateRobotState(timeDiff);
     drawRobot();
 }
 
-// Animate the frame
+// Animate the picture by updating the canvas
 function animate(canvas, currTime) {
-    // update
+    // Get difference in time between frames
     var time = (new Date()).getTime();
     var timeDiff = time - currTime;
 
     updateCanvas(document.getElementById("robotCanvas"), timeDiff);
 
-    // request new frame
+    // request new frame. Asks browser to schedule call whenever the opportunity
+    //  arises. This prevents overwork while still making animation as fast as possible
     requestAnimationFrame(function() {
         animate(canvas, time);
     });
@@ -668,6 +759,7 @@ setTimeout(function() {
     animate(document.getElementById("robotCanvas"), startTime);
 }, 1000);
 
+// If we have clicked somewhere, stop direct and wheelControl modes.
 function onClick()
 {
     if (inputs.option == "direct" || inputs.option == "wheelControl")
@@ -676,6 +768,8 @@ function onClick()
     }
 }
 
+// While mouseing over the canvas, store the initial 
+//  mouse position if we are in manual mode
 function onMouseover(event)
 {
     if (inputs.manualMode)
@@ -685,12 +779,17 @@ function onMouseover(event)
     }
 }
 
+// Mouse move event
 function onMousemove(event)
 {
+    // In manual mode
     if (inputs.manualMode)
     {
+        // Left click -- velocity move mode!
         if (page.mouseDown)
         {
+            // Set theta and velocity relative to where the mouse has moved
+            //  since last time
             var diffX = (event.clientX - page.mouseCenterX) / page.pixelsPerFt;
             var diffY = (page.mouseCenterY - event.clientY) / page.pixelsPerFt;
             inputs.theta = Math.atan2(diffY, diffX);
@@ -698,11 +797,14 @@ function onMousemove(event)
             inputs.speed = Math.sqrt(diffX * diffX + diffY * diffY);
             inputs.option = "direct";
         }
+        // No click - position movement
         else
         {
+            // Only set the point every three movements to cut down on unrealistic jitter
             onMousemove.count = ++onMousemove.count || 1;
             if (onMousemove.count % 3 == 0)
             {
+                // Make robot move how much the mouse has moved, comparatively
                 var diffX = (event.clientX - page.mouseCenterX) / page.pixelsPerFt * 10.0;
                 var diffY = (event.clientY - page.mouseCenterY) / page.pixelsPerFt * 10.0;
                 inputs.waypointArray = [];
@@ -710,7 +812,9 @@ function onMousemove(event)
                 inputs.theta = actualState.theta;
                 inputs.waypointArray.push(actualState.centerY - diffY); // y is inverted
                 inputs.time = [];
-                inputs.time.push(0.1);
+                
+                // Make it take 0.2 s, arbitrarily
+                inputs.time.push(0.2);
                 actualState.stopwatchTime = (new Date()).getTime();
                 inputs.option = "point";
                 page.mouseCenterX = event.clientX;
@@ -720,6 +824,7 @@ function onMousemove(event)
     }
 }
 
+// On mouse down, recognize we want velocity mode
 function onMousedown()
 {
     page.mouseDown = true;
@@ -727,21 +832,25 @@ function onMousedown()
     page.mouseCenterY = event.clientY;
 }
 
+// Reset velocity mode
 function onMouseup()
 {
     page.mouseDown = false;
 }
 
+// Callback to hide input fields
 function hideInput(inputName)
 {
     document.getElementById(inputName).style.visibility = "hidden";
 }
 
+// Callback to show input fields
 function showInput(inputName)
 {
     document.getElementById(inputName).style.visibility = "visible";
 }
 
+// Hide every input field except the ones that are relevant for the new input option
 function onControlChange()
 {
     // First hide them all
@@ -752,11 +861,13 @@ function onControlChange()
     neededInputFields[controlOption].forEach(showInput);
 }
 
+// Add all the listeners
 document.getElementById("robotCanvas").addEventListener('click', onClick, false);
 window.addEventListener('keypress', onClick, false);
 document.getElementById("robotCanvas").addEventListener('mouseover', onMouseover, false);
 document.getElementById("robotCanvas").addEventListener('mousemove', onMousemove, false);
 document.getElementById("robotCanvas").addEventListener('mousedown', onMousedown, false);
 document.getElementById("robotCanvas").addEventListener('mouseup', onMouseup, false);
-onControlChange(); // Start off by calling this so inputs are hidden
 document.getElementById("controlOption").addEventListener('change', onControlChange, false);
+
+onControlChange(); // Start off by calling this so inputs are hidden

@@ -34,7 +34,9 @@ var robotSpecs = new function() {
     // Units of feet
     this.realWidth = 2;
     this.realHeight = 4;
-    this.wheelRadius = 1;
+    
+    // Wheel radius chosen was 1. The full height of the robot is 4
+    this.wheelRadius = 0.25;
     
     // Display width and height, in pixels
     this.displayWidth = this.realWidth * page.pixelsPerFt;

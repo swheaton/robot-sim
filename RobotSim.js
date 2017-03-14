@@ -92,6 +92,37 @@ var goalPath = {
     centerY: 0.0
 }
 
+var inputFields = [
+    "direction_input",
+    "speed_input",
+	"rotation_input",
+	"wheel1_input",
+	"wheel2_input",
+	"wheel3_input",
+	"wheel4_input",
+	"PointX_input",
+	"PointY_input",
+	"Waypoints_input",
+	"radius_input",
+	"radius2_input",
+	"inclination_input",
+	"inclination2_input",
+	"time_input",
+	"length1_input",
+	"length2_input"
+]
+
+var neededInputFields = {
+    none: [],
+    direct: ["direction_input", "speed_input", "rotation_input"],
+    wheelControl: ["wheel1_input", "wheel2_input", "wheel3_input", "wheel4_input"],
+    point: ["PointX_input", "PointY_input", "Waypoints_input", "time_input"],
+    circle: ["radius_input", "inclination_input", "time_input"],
+    rect: ["inclination_input", "length1_input", "length2_input", "time_input"],
+    eight: ["radius_input", "radius2_input", "inclination_input", "inclination2_input", "time_input"],
+    manual: []
+}
+
 function drawGrid() {
     var context = document.getElementById("gridCanvas").getContext("2d");
     for (var x = 0; x <= page.displayGridWidth; x += page.pixelsPerFt / 2) {
@@ -275,7 +306,6 @@ function updateRobotPlan(timeDiff) {
         case "point":
         case "rect":
             var point = getPoint();
-            //console.log("curr point: " + point);
             if (this.forceStop == true || Math.abs(point.y - actualState.centerY) < 0.005 && Math.abs(point.x - actualState.centerX) < 0.005) {
                 control.velX = 0.0;
                 control.velY = 0.0;
@@ -285,7 +315,6 @@ function updateRobotPlan(timeDiff) {
                     inputs.time = inputs.time.splice(1, inputs.time.length);
                     actualState.stopwatchTime = (new Date()).getTime();
                     inputs.waypointArray = inputs.waypointArray.splice(2, inputs.waypointArray.length);
-                    console.log("popped. time: " + inputs.time + " points: " + inputs.waypointArray);
                 }
                 this.forceStop = false;
             }
@@ -294,7 +323,6 @@ function updateRobotPlan(timeDiff) {
                 var targetTheta = Math.atan2(point.y - actualState.centerY, point.x - actualState.centerX);
                 control.velX = distance / timeLeft * Math.cos(targetTheta + (actualState.theta));
                 control.velY = distance / timeLeft * Math.sin(targetTheta + (actualState.theta));
-                //console.log(control.velX, control.velY);
             }
             if (Math.abs(inputs.theta - actualState.theta) < 0.005) {
                 control.velRot = 0.0;
@@ -492,7 +520,7 @@ function onSubmitControlOption() {
 
             // Set up goal path for drawing
             goalPath.type = "lines";
-            goalPath.pointArray = inputs.waypointArray;
+            goalPath.pointArray = inputs.waypointArray.slice();
 
             break;
 
@@ -505,7 +533,7 @@ function onSubmitControlOption() {
             // Add waypoints as corners of rect
             var theAngle = Math.atan(length2 / length1);
             console.log(theAngle);
-            var hypotenuse = Math.sqrt(length2 * length2 + length2 * length2);
+            var hypotenuse = Math.sqrt(length1 * length1 + length2 * length2);
             inputs.waypointArray.push(actualState.centerX + length1 * Math.cos(theAngle + inputs.inclination));
             inputs.waypointArray.push(actualState.centerY + length1 * Math.sin(theAngle + inputs.inclination));
             inputs.waypointArray.push(actualState.centerX + hypotenuse * Math.cos(inputs.inclination));
@@ -531,7 +559,7 @@ function onSubmitControlOption() {
 
             // Set up goal path for drawing
             goalPath.type = "lines";
-            goalPath.pointArray = inputs.waypointArray;
+            goalPath.pointArray = inputs.waypointArray.slice();
 
             break;
 
@@ -544,16 +572,17 @@ function onSubmitControlOption() {
             requiredSpeed = inputs.radius * 2 * Math.PI / inputs.time[0];
 
             console.log("Circle (X, Y, radius): " + inputs.waypointArray[0] + ", " + inputs.waypointArray[1] + " " + inputs.radius);
+            goalPath.radii = [];
             goalPath.radii.push(inputs.radius);
-            goalPath.pointArray = inputs.waypointArray;
+            goalPath.pointArray = inputs.waypointArray.slice();
             goalPath.type = "circles";
             break;
 
         case "eight":
             inputs.inclination = Number(Math.PI / 180.0 * document.getElementById("inclination").value);
             inputs.inclination2 = Number(Math.PI / 180.0 * document.getElementById("inclination2").value);
-            inputs.radius = Number(document.getElementById("length1").value);
-            inputs.radius2 = Number(document.getElementById("length2").value);
+            inputs.radius = Number(document.getElementById("radius").value);
+            inputs.radius2 = Number(document.getElementById("radius2").value);
             inputs.waypointArray.push(actualState.centerX + inputs.radius * Math.cos(inputs.inclination));
             inputs.waypointArray.push(actualState.centerY + inputs.radius * Math.sin(inputs.inclination));
             inputs.waypointArray.push(actualState.centerX + inputs.radius2 * Math.cos(inputs.inclination2));
@@ -561,7 +590,8 @@ function onSubmitControlOption() {
             
             requiredSpeed = (inputs.radius * 2 * Math.PI + inputs.radius2 * 2 * Math.PI) / inputs.time[0];
 
-            goalPath.pointArray = inputs.waypointArray;
+            goalPath.pointArray = inputs.waypointArray.slice();
+            goalPath.radii = [];
             goalPath.radii.push(inputs.radius);
             goalPath.radii.push(inputs.radius2);
             goalPath.type = "circles";
@@ -580,6 +610,9 @@ function onSubmitControlOption() {
             inputs.centerX = actualState.centerX;
             inputs.centerY = actualState.centerY;
             inputs.theta = 0.0;
+            break;
+            
+        case "none":
             break;
 
         default:
@@ -698,9 +731,31 @@ function onMouseup()
     page.mouseDown = false;
 }
 
+function hideInput(inputName)
+{
+    document.getElementById(inputName).style.visibility = "hidden";
+}
+
+function showInput(inputName)
+{
+    document.getElementById(inputName).style.visibility = "visible";
+}
+
+function onControlChange()
+{
+    // First hide them all
+    inputFields.forEach(hideInput);
+    var controlOptionElt = document.getElementById("controlOption");
+    var controlOption = controlOptionElt.options[controlOptionElt.selectedIndex].value;
+    console.log(controlOption);
+    neededInputFields[controlOption].forEach(showInput);
+}
+
 document.getElementById("robotCanvas").addEventListener('click', onClick, false);
 window.addEventListener('keypress', onClick, false);
 document.getElementById("robotCanvas").addEventListener('mouseover', onMouseover, false);
 document.getElementById("robotCanvas").addEventListener('mousemove', onMousemove, false);
 document.getElementById("robotCanvas").addEventListener('mousedown', onMousedown, false);
 document.getElementById("robotCanvas").addEventListener('mouseup', onMouseup, false);
+onControlChange(); // Start off by calling this so inputs are hidden
+document.getElementById("controlOption").addEventListener('change', onControlChange, false);

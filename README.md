@@ -11,6 +11,12 @@ This simulator is written in HTML and Javascript, and uses the HTML5 Canvas draw
 * JS isn't object-oriented or type-safe which is a con for me, maybe not for others. 
 * Animation frame feature allows the browser to decide when to draw the next frame. If the browser is busy, the time delta between frames can get large enough to mess up the simulation
 * My lack of GUI / JS knowledge required a large amount of the code to be devoted to just inputs
+## Robot
+* 2 feet wide by 4 feet long
+* Wheel radius chosen was 1. The full length of the robot is 4, so the maximum radius would be 2 (since the length is from axle to axle, so twice the radius can fit as the length). 2 would clearly be oversized wheels and not realistic. But we want the wheels to be as big as possible so that lower rotations of the wheel are required to hit a given velocity. So I chose half that, or a radius of 1 foot. This also makes calculations by hand nice.
+* In this simulation, the transparent rectangle is the robot. The red dot is the center of the robot. The white rectangle inside the robot marks the front. 
+* Background has 1/2 foot grid lines
+* Maximum vehicle speed (with respect to the center of the robot) is 15.0 ft/s. This does not count rotation at all. If any input would require the robot to travel faster than is possible given this max velocity, an error will be alerted and the action not performed.
 ## Interface
 Clearly I am not a user interface developer based on the terribleness that is the IO interface on the right panel. The focus was on the robot simulation, but an interface was necessary. This section describes what's there.
 ### Inputs

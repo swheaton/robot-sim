@@ -289,7 +289,7 @@ function getTimeLeft(timeDiff) {
     return Math.max(timeDiff / 1000.0, inputs.time[0] - ((new Date()).getTime() - actualState.stopwatchTime) / 1000.0);
 }
 
-// Euclidean distance between two points
+// Euclidean distance between two points. Use * instead of pow for speed?
 function dist(x1, y1, x2, y2) {
     return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
 }
@@ -557,7 +557,8 @@ function onSubmitControlOption() {
             control.wheel2 = Number(document.getElementById("wheel2").value);
             control.wheel3 = Number(document.getElementById("wheel3").value);
             control.wheel4 = Number(document.getElementById("wheel4").value);
-            // TODO check requiredSpeed for wheel control
+            requiredSpeed = Math.sqrt(Math.pow((robotSpecs.wheelRadius / 4) * (control.wheel1 - control.wheel2 - control.wheel3 + control.wheel4), 2) + 
+                                        Math.pow((robotSpecs.wheelRadius / 4) * (control.wheel1 + control.wheel2 + control.wheel3 + control.wheel4), 2));
             console.log("Wheel 1-4: " + control.wheel1 + " " + control.wheel2 + " " + control.wheel3 + " " + control.wheel4);
             break;
 

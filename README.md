@@ -1,5 +1,7 @@
 # Omni-directional (Mecanum Wheeled) Robotic Vehicle Simulation
 Mecanum wheels put a force at a 45 degree angle instead of straight ahead like typical wheels. This allows a robot with these wheels to move in any direction and rotate. This simulation directs the robot by controlling the individually-driven wheels, then feeding those values through the kinematic equations to get the realized velocity and position.
+## Getting Started
+Easy. Open up RobotSim.html in a browser. RobotSim.js will be loaded if it is in the same directory (which it should be).
 ## Design
 This simulator is written in HTML and Javascript, and uses the HTML5 Canvas drawing feature.  Multiple canvases are layered on top of each other so that some drawings like the background grid need only be drawn once.  The simulation becomes animated by redrawing the top canvas repeatedly.
 ### Advantages

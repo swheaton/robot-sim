@@ -148,7 +148,7 @@ var neededInputFields = {
     none: [],
     direct: ["direction_input", "speed_input", "rotation_input"],
     wheelControl: ["wheel1_input", "wheel2_input", "wheel3_input", "wheel4_input"],
-    point: ["PointX_input", "PointY_input", "Waypoints_input", "time_input"],
+    point: ["PointX_input", "PointY_input", "Waypoints_input", "time_input", "direction_input"],
     circle: ["radius_input", "inclination_input", "time_input"],
     rect: ["inclination_input", "length1_input", "length2_input", "time_input"],
     eight: ["radius_input", "radius2_input", "inclination_input", "inclination2_input", "time_input"],

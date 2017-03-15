@@ -235,6 +235,18 @@ function clearDrawnPath() {
     // TODO figure out how to just add to actual path instead of clearing
 }
 
+// Make sure angle is within [0, 2*PI]
+function fixupAngle(angle)
+{
+    var tempAngle = angle;
+    if (angle < 0)
+    {
+        // Bring negative up to the right zone. Add 1 is in there so we don't get -0
+        tempAngle += 2 * Math.PI * (-Math.floor(tempAngle / (2 * Math.PI)));
+    }
+    return tempAngle % (2 * Math.PI);
+}
+
 // Kinematic equations for updating robot position given its current velocities and state.
 //  timeDiff is time to be used for current frame, in milliseconds
 function updateRobotPosition(timeDiff) {
@@ -247,7 +259,7 @@ function updateRobotPosition(timeDiff) {
         (actualState.velX * Math.cos(actualState.theta) + actualState.velY * Math.sin(actualState.theta));
     actualState.centerY = actualState.centerY + (timeDiff / 1000.0) *
         (actualState.velX * Math.sin(-actualState.theta) + actualState.velY * Math.cos(actualState.theta));
-    actualState.theta = (actualState.theta - actualState.velRot * (timeDiff / 1000.0) + 2 * Math.PI) % (Math.PI * 2);
+    actualState.theta = fixupAngle(actualState.theta - actualState.velRot * (timeDiff / 1000.0));
 
     // Move robot back to center if it's about to go within 3 feet of border.
     if (actualState.centerX <= page.centerX - (page.realGridWidth / 2 - 3) ||
@@ -393,8 +405,7 @@ function updateRobotPlan(timeDiff) {
         case "eight":
         case "circle":
             // Angle of robot from center of circle
-            var currInclination = (Math.atan2(inputs.waypointArray[1] - actualState.centerY, inputs.waypointArray[0] - actualState.centerX) +
-                2 * Math.PI) % (2 * Math.PI);
+            var currInclination = fixupAngle(Math.atan2(inputs.waypointArray[1] - actualState.centerY, inputs.waypointArray[0] - actualState.centerX));
             var targetTheta = currInclination + Math.PI / 2;
 
             // Error correction to try and get the path to conform to a circle
@@ -421,7 +432,7 @@ function updateRobotPlan(timeDiff) {
             }
             else {
                 // Travel along what we think is the tangent to the intended circle
-                var angleLeft = (currInclination - inputs.inclination + 2 * Math.PI) % (2 * Math.PI);
+                var angleLeft = fixupAngle(currInclination - inputs.inclination);
                 
                 // Make a "0" angle be "2*PI" because it's easier
                 if (angleLeft < 0.05 && timeLeft * 1000.0 > 2 * timeDiff) {
@@ -614,7 +625,6 @@ function onSubmitControlOption() {
             var length1 = Number(document.getElementById("length1").value);
             var length2 = Number(document.getElementById("length2").value);
             inputs.inclination = Number(Math.PI / 180.0 * document.getElementById("inclination").value);
-            inputs.inclination = (inputs.inclination + Math.PI * 2) % (Math.PI * 2);
 
             // Add waypoints as corners of rectangle
             var theAngle = Math.atan(length2 / length1);
@@ -728,6 +738,8 @@ function onSubmitControlOption() {
 
     // Fix up theta to be in [0, 2PI) hopefully
     inputs.theta = (inputs.theta + 2 * Math.PI) % (2 * Math.PI);
+    inputs.inclination = fixupAngle(inputs.inclination);
+    inputs.inclination2 = fixupAngle(inputs.inclination2);
 }
 
 // Called continuously whenever a new frame can be drawn. Updates
@@ -879,3 +891,4 @@ document.getElementById("robotCanvas").addEventListener('mouseup', onMouseup, fa
 document.getElementById("controlOption").addEventListener('change', onControlChange, false);
 
 onControlChange(); // Start off by calling this so inputs are hidden
+

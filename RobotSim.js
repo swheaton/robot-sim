@@ -866,7 +866,6 @@ function onControlChange()
     inputFields.forEach(hideInput);
     var controlOptionElt = document.getElementById("controlOption");
     var controlOption = controlOptionElt.options[controlOptionElt.selectedIndex].value;
-    console.log(controlOption);
     neededInputFields[controlOption].forEach(showInput);
 }
 

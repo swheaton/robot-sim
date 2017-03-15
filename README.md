@@ -14,6 +14,31 @@ This simulator is written in HTML and Javascript, and uses the HTML5 Canvas draw
 ## Interface
 Clearly I am not a user interface developer based on the terribleness that is the IO interface on the right panel. The focus was on the robot simulation, but an interface was necessary. This section describes what's there.
 ### Inputs
+Multiple input modes exist to direct the robot. Select the desired mode, input parameters, then click the 'Submit Control Change' button.
+* None: Does nothing, obviously
+* Route and Rotation: Specify a ray to travel along forever, and a rotation rate. Robot will stop if mouse is clicked on the canvas or if any key is pressed.
+  * Theta: Angle of travel, measured in degrees from global inertial frame of reference x axis (horizontal).
+  * Speed: Speed of travel, in feet per second.
+  * Rotation Rate: Rate of rotation, in degrees per second, where positive rotation rate is defined as counterclockwise and vice versa.
+* Wheel Controls: Hard-code the wheel control inputs and watch what happens live!!
+  * Wheels 1-4: Rotation rate of Mecanum wheels, in rotations per second. See Wheel Control section of Outputs below for location of wheels.
+* Point: Travel to an x,y coordinate in space, possibly visiting some waypoints along the way.
+  * Theta: Final theta you want the robot to have, where theta is defined below in the output section. Degrees.
+  * End Point: X,Y coordinate of end point you want the robot to travel to.
+  * Waypoints: Array of X,Y coordinates the robot will travel to, in order, on its way to the end point. This array is comma separated, with x,y pairs concatenated together, like this: [x1,y1,x2,y2,...,xn,yn]. Input this without the square brackets.
+  * Time to Complete: Time, in seconds, for which the robot will complete the path, including waypoints.
+* Circular Path: Travel in a circle
+  * Radius: Radius of the circle, in feet.
+  * Inclination: Direction of the center of the circle, in degrees, measured from the inertial global reference frame x axis (horizontal).
+  * Time to Complete: Time, in seconds, for which the robot will complete the path.
+* Rectangular Path: Travel along a rectangle.
+  * Inclination: Direction of opposite corner of the rectangle, in degrees, measured from the inertial global reference frame x axis (horizontal). Assume the robot is on a corner to begin.
+  * Side Lengths: Lengths of the rectangle, where length 1 is the nearest side as the robot travels clockwise around the rectangle, and length 2 is the other one.
+  * Time to Complete: Time, in seconds, for which the robot will complete the path.
+* Figure Eight: Travel along two circles instead of one.
+  * Radii: Radii of the two circles that the robot will travel.
+  * Inclinations: Directions of the centers of the circles, in degrees, measured from the inertial global reference frame x axis (horizontal).
+  * Time to Complete: Time, in seconds, for which the robot will complete the path (both circles).
 ### Outputs
 The rightmost panel contains outputs that update every simulation frame update
 * Position: X and Y position in feet of the center of the robot. If it goes off the screen, the viewing window will shift but the position will remain the same.

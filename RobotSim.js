@@ -170,7 +170,7 @@ function drawGrid() {
         context.lineTo(page.displayGridWidth, 0.5 + x);
     }
 
-    // Black, but opaque
+    // Black, but faint
     context.strokeStyle = 'rgba(0, 0, 0, 0.2)';
     context.stroke();
 }
@@ -196,7 +196,7 @@ function drawRobot() {
     ctx.translate(centerCol, centerRow);
     ctx.rotate(actualState.theta);
     ctx.fillStyle = "black";
-    ctx.globalAlpha = 0.5; // Make somewhat opaque to see grid lines and path behind it
+    ctx.globalAlpha = 0.5; // Make somewhat transparent to see grid lines and path behind it
     ctx.fillRect(-robotSpecs.displayWidth / 2, -robotSpecs.displayHeight / 2,
         robotSpecs.displayWidth, robotSpecs.displayHeight);
 

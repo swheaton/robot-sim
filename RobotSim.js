@@ -547,6 +547,12 @@ function onSubmitControlOption() {
     inputs.waypointArray = [];
     inputs.time = [];
     inputs.time.push(Number(document.getElementById("time").value));
+    if (inputs.time[0] <= 0 && (["point", "circle", "rect", "eight"].includes(controlName)))
+    {
+        alert('Invalid time - nonpositive');
+        inputs.option = "none";
+        return;
+    }
     
     inputs.manualMode = false;
     goalPath.type = "none";
@@ -604,9 +610,12 @@ function onSubmitControlOption() {
                     inputs.waypointArray[i], inputs.waypointArray[i + 1])
             }
             
-            // Scale times based on distance
-            for (var i = 0; i < inputs.time.length; i++) {
-                inputs.time[i] /= totalDist;
+            if (totalDist > 0)
+            {
+                // Scale times based on distance
+                for (var i = 0; i < inputs.time.length; i++) {
+                    inputs.time[i] /= totalDist;
+                }
             }
 
             requiredSpeed = totalDist / overallTime;
@@ -624,6 +633,12 @@ function onSubmitControlOption() {
             // Get lengths and inclinations of opposite corners of the rectangle from current pos
             var length1 = Number(document.getElementById("length1").value);
             var length2 = Number(document.getElementById("length2").value);
+            if (length1 <= 0 || length2 <= 0)
+            {
+                alert("invalid rectangle - length nonpositive");
+                inputs.option = "none";
+                return;
+            }
             inputs.inclination = Number(Math.PI / 180.0 * document.getElementById("inclination").value);
 
             // Add waypoints as corners of rectangle
@@ -664,6 +679,12 @@ function onSubmitControlOption() {
             //  of circle for our own purposes
             inputs.inclination = Number(Math.PI / 180.0 * document.getElementById("inclination").value);
             inputs.radius = Number(document.getElementById("radius").value);
+            if (inputs.radius <= 0)
+            {
+                alert('Invalid radius - nonpositive');
+                inputs.option = "none";
+                return;
+            }
             inputs.waypointArray.push(actualState.centerX + inputs.radius * Math.cos(inputs.inclination));
             inputs.waypointArray.push(actualState.centerY + inputs.radius * Math.sin(inputs.inclination));
             
@@ -685,6 +706,12 @@ function onSubmitControlOption() {
             inputs.inclination2 = Number(Math.PI / 180.0 * document.getElementById("inclination2").value);
             inputs.radius = Number(document.getElementById("radius").value);
             inputs.radius2 = Number(document.getElementById("radius2").value);
+            if (inputs.radius <= 0 || inputs.radius2 <= 0)
+            {
+                alert('Invalid radius - nonpositive');
+                inputs.option = "none";
+                return;
+            }
             inputs.waypointArray.push(actualState.centerX + inputs.radius * Math.cos(inputs.inclination));
             inputs.waypointArray.push(actualState.centerY + inputs.radius * Math.sin(inputs.inclination));
             inputs.waypointArray.push(actualState.centerX + inputs.radius2 * Math.cos(inputs.inclination2));
@@ -720,7 +747,7 @@ function onSubmitControlOption() {
             break;
 
         default:
-            control.option = "";
+            inputs.option = "";
             console.error("Invalid control option (" + controlName + ") somehow");
             break;
     }
